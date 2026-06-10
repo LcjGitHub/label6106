@@ -256,8 +256,34 @@ export default function HistoryPage({
     setSelectedIds(new Set())
   }
 
+  const selectedIdsInFilter = useMemo(() => {
+    const ids = new Set()
+    filteredMessages.forEach((m) => {
+      if (selectedIds.has(m.id)) {
+        ids.add(m.id)
+      }
+    })
+    return ids
+  }, [filteredMessages, selectedIds])
+
   const isAllSelected = filteredMessages.length > 0 && filteredMessages.every((m) => selectedIds.has(m.id))
-  const isPartialSelected = selectedIds.size > 0 && !isAllSelected
+  const isPartialSelected = selectedIdsInFilter.size > 0 && !isAllSelected
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const filteredIds = new Set(filteredMessages.map((m) => m.id))
+      let hasChange = false
+      const next = new Set()
+      prev.forEach((id) => {
+        if (filteredIds.has(id)) {
+          next.add(id)
+        } else {
+          hasChange = true
+        }
+      })
+      return hasChange ? next : prev
+    })
+  }, [filteredMessages])
 
   const handleToggleTagFilter = (tagId) => {
     if (tagId === null) {
@@ -344,11 +370,37 @@ export default function HistoryPage({
   }
 
   const handleConfirmBatchDelete = () => {
-    if (onDeleteMessages && selectedIds.size > 0) {
-      const idsToDelete = Array.from(selectedIds)
+    if (onDeleteMessages && selectedIdsInFilter.size > 0) {
+      const idsToDelete = Array.from(selectedIdsInFilter)
       const count = idsToDelete.length
+
+      setStarred((prev) => {
+        const updated = { ...prev }
+        idsToDelete.forEach((id) => {
+          delete updated[id]
+        })
+        saveStarredToStorage(updated)
+        return updated
+      })
+
+      const recalled = loadRecalledFromStorage()
+      let recalledChanged = false
+      idsToDelete.forEach((id) => {
+        if (recalled[id]) {
+          delete recalled[id]
+          recalledChanged = true
+        }
+      })
+      if (recalledChanged) {
+        saveRecalledToStorage(recalled)
+      }
+
       onDeleteMessages(idsToDelete)
-      setSelectedIds(new Set())
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        idsToDelete.forEach((id) => next.delete(id))
+        return next
+      })
       setDeleteToast({ msg: `已删除 ${count} 条报文` })
       if (selected && idsToDelete.includes(selected.id)) {
         setSelected(null)
@@ -458,7 +510,7 @@ export default function HistoryPage({
             onCreateTag={onCreateTag}
           />
         </div>
-        {selectedIds.size > 0 && (
+        {selectedIdsInFilter.size > 0 && (
           <div className="history-page__batch-toolbar">
             <label className="history-page__batch-select-all">
               <input
@@ -478,7 +530,7 @@ export default function HistoryPage({
               <span>全选</span>
             </label>
             <span className="history-page__batch-count">
-              已选 {selectedIds.size} 条
+              已选 {selectedIdsInFilter.size} 条
             </span>
             <button
               type="button"
@@ -489,6 +541,11 @@ export default function HistoryPage({
             </button>
           </div>
         )}
+        {deleteToast && (
+          <div className="history-page__list-toast">
+            {deleteToast.msg}
+          </div>
+        )}
         <ul className="history-page__list" role="list">
           {filteredMessages.length > 0 ? (
             filteredMessages.map((msg) => (
@@ -496,14 +553,18 @@ export default function HistoryPage({
               key={msg.id}
               className={`${msg.recalled ? 'history-page__list-item--recalled' : ''} ${selectedIds.has(msg.id) ? 'history-page__list-item--selected' : ''}`}
             >
-              <div className="history-page__item-checkbox">
+              <label className="history-page__item-checkbox">
                 <input
                   type="checkbox"
                   checked={selectedIds.has(msg.id)}
                   onChange={(e) => handleToggleSelect(msg.id, e)}
                   onClick={(e) => e.stopPropagation()}
+                  aria-label={`选择报文 #${String(msg.index).padStart(3, '0')}`}
                 />
-              </div>
+                <span className="history-page__item-checkbox-label">
+                  选择报文 #{String(msg.index).padStart(3, '0')}
+                </span>
+              </label>
               <button
                 type="button"
                 className={`history-page__item ${selected?.id === msg.id ? 'history-page__item--active' : ''} ${msg.recalled ? 'history-page__item--recalled' : ''}`}
@@ -605,7 +666,7 @@ export default function HistoryPage({
             <div className="history-page__modal" onClick={(e) => e.stopPropagation()}>
               <h4 className="history-page__modal-title">确认批量删除</h4>
               <p className="history-page__modal-message">
-                您确定要删除选中的 {selectedIds.size} 条报文吗？
+                您确定要删除选中的 {selectedIdsInFilter.size} 条报文吗？
               </p>
               <p className="history-page__modal-hint">
                 删除后报文将无法恢复，请谨慎操作。
@@ -619,11 +680,6 @@ export default function HistoryPage({
                 </button>
               </div>
             </div>
-          </div>
-        )}
-        {deleteToast && (
-          <div className="history-page__toast history-page__toast--global">
-            {deleteToast.msg}
           </div>
         )}
         {selected ? (

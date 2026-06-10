@@ -972,6 +972,7 @@
   flex-shrink: 0;
   padding-top: 0.65rem;
   padding-left: 0.5rem;
+  cursor: pointer;
 }
 
 .history-page__item-checkbox input[type="checkbox"] {
@@ -980,16 +981,34 @@
   accent-color: #ffb000;
 }
 
+.history-page__item-checkbox-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .history-page__item {
   flex: 1;
   min-width: 0;
 }
 
-.history-page__toast--global {
-  position: absolute;
-  top: 0.65rem;
-  right: 0.85rem;
-  z-index: 50;
+.history-page__list-toast {
+  padding: 0.4rem 0.75rem;
+  margin: 0.3rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--btn-bg);
+  border: 2px outset var(--btn-border);
+  color: var(--phosphor);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  animation: toast-fade-in 0.2s ease-out;
+  text-align: center;
 }
 
 @media (max-width: 720px) {
