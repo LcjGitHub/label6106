@@ -54,6 +54,7 @@ function isInTimeRange(timestamp, range) {
 
 const RECALL_WINDOW_MS = 2 * 60 * 1000
 const RECALL_STORAGE_KEY = 'telex_recalled_messages'
+const STAR_STORAGE_KEY = 'telex_starred_messages'
 
 function loadRecalledFromStorage() {
   try {
@@ -67,6 +68,22 @@ function loadRecalledFromStorage() {
 function saveRecalledToStorage(data) {
   try {
     localStorage.setItem(RECALL_STORAGE_KEY, JSON.stringify(data))
+  } catch {
+  }
+}
+
+function loadStarredFromStorage() {
+  try {
+    const raw = localStorage.getItem(STAR_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveStarredToStorage(data) {
+  try {
+    localStorage.setItem(STAR_STORAGE_KEY, JSON.stringify(data))
   } catch {
   }
 }
@@ -129,6 +146,9 @@ export default function HistoryPage({
   const [selectedTagIds, setSelectedTagIds] = useState([])
   const [exportToast, setExportToast] = useState(null)
   const [confirmRecall, setConfirmRecall] = useState(null)
+  const [starFilter, setStarFilter] = useState(false)
+  const [starred, setStarred] = useState(() => loadStarredFromStorage())
+  const [starAnimatingId, setStarAnimatingId] = useState(null)
   const { playClick, playBell } = useTypewriterSound(soundEnabled)
 
   useEffect(() => {
@@ -151,9 +171,34 @@ export default function HistoryPage({
 
   const getTagById = (tagId) => tags.find((t) => t.id === tagId)
 
+  const handleToggleStar = (messageId) => {
+    setStarAnimatingId(messageId)
+    setTimeout(() => setStarAnimatingId(null), 400)
+
+    setStarred((prev) => {
+      const updated = { ...prev }
+      if (updated[messageId]) {
+        delete updated[messageId]
+      } else {
+        updated[messageId] = {
+          starredAt: new Date().toISOString(),
+        }
+      }
+      saveStarredToStorage(updated)
+      return updated
+    })
+  }
+
+  const isStarred = (messageId) => {
+    return !!starred[messageId]
+  }
+
   const filteredMessages = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase()
     return messages.filter((msg) => {
+      if (starFilter && !isStarred(msg.id)) {
+        return false
+      }
       if (priorityFilter !== 'all' && msg.priority !== priorityFilter) {
         return false
       }
@@ -181,7 +226,7 @@ export default function HistoryPage({
       }
       return true
     })
-  }, [messages, searchKeyword, priorityFilter, timeRangeFilter, selectedTagIds])
+  }, [messages, searchKeyword, priorityFilter, timeRangeFilter, selectedTagIds, starFilter, starred])
 
   const handleToggleTagFilter = (tagId) => {
     if (tagId === null) {
@@ -321,6 +366,15 @@ export default function HistoryPage({
               ))}
             </select>
           </div>
+          <label className="history-page__star-filter">
+            <input
+              type="checkbox"
+              checked={starFilter}
+              onChange={(e) => setStarFilter(e.target.checked)}
+            />
+            <span className="history-page__star-filter-icon">★</span>
+            <span>只看收藏</span>
+          </label>
           <TagFilter
             tags={tags}
             selectedTagIds={selectedTagIds}
@@ -338,7 +392,19 @@ export default function HistoryPage({
                 onClick={() => openMessage(msg)}
               >
                 <span className="history-page__item-top">
-                  <span className="history-page__item-id">#{String(msg.index).padStart(3, '0')}</span>
+                  <span className="history-page__item-id">
+                    <span
+                      className={`history-page__star-icon ${isStarred(msg.id) ? 'history-page__star-icon--active' : ''} ${starAnimatingId === msg.id ? 'history-page__star-icon--animating' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleToggleStar(msg.id)
+                      }}
+                      title={isStarred(msg.id) ? '取消收藏' : '收藏'}
+                    >
+                      ★
+                    </span>
+                    #{String(msg.index).padStart(3, '0')}
+                  </span>
                   <span className="history-page__item-top-right">
                     {msg.recalled && (
                       <span className="history-page__recall-badge">已撤回</span>
@@ -426,6 +492,13 @@ export default function HistoryPage({
             <header className="history-page__detail-header">
               <div className="history-page__detail-header-main">
                 <h3>
+                  <span
+                    className={`history-page__detail-star ${isStarred(selected.id) ? 'history-page__detail-star--active' : ''} ${starAnimatingId === selected.id ? 'history-page__detail-star--animating' : ''}`}
+                    onClick={() => handleToggleStar(selected.id)}
+                    title={isStarred(selected.id) ? '取消收藏' : '收藏'}
+                  >
+                    ★
+                  </span>
                   报文 #{String(selected.index).padStart(3, '0')}
                   {selected.recalled && (
                     <span className="history-page__recall-badge history-page__recall-badge--large">已撤回</span>

@@ -804,6 +804,120 @@
   color: #fff;
 }
 
+.history-page__star-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--phosphor-dim);
+  cursor: pointer;
+  user-select: none;
+  padding: 0.3rem 0.5rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--bezel-dark);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  transition: all 0.15s ease;
+}
+
+.history-page__star-filter:hover {
+  border-color: var(--phosphor-dim);
+  color: var(--phosphor);
+}
+
+.history-page__star-filter input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+  accent-color: #ffb000;
+}
+
+.history-page__star-filter-icon {
+  color: #ffb000;
+  font-size: 0.85rem;
+}
+
+.history-page__star-icon {
+  display: inline-block;
+  margin-right: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--bezel-dark);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.history-page__star-icon:hover {
+  transform: scale(1.2);
+  color: #ffb000;
+}
+
+.history-page__star-icon--active {
+  color: #ffb000;
+  text-shadow: 0 0 4px rgba(255, 176, 0, 0.5);
+}
+
+.history-page__star-icon--animating {
+  animation: star-bounce 0.4s ease;
+}
+
+@keyframes star-bounce {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.5);
+  }
+  60% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.history-page__detail-star {
+  display: inline-block;
+  margin-right: 0.5rem;
+  font-size: 1.1rem;
+  color: var(--bezel-dark);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  vertical-align: middle;
+}
+
+.history-page__detail-star:hover {
+  transform: scale(1.15);
+  color: #ffb000;
+}
+
+.history-page__detail-star--active {
+  color: #ffb000;
+  text-shadow: 0 0 6px rgba(255, 176, 0, 0.6);
+}
+
+.history-page__detail-star--animating {
+  animation: detail-star-pop 0.4s ease;
+}
+
+@keyframes detail-star-pop {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.4) rotate(-10deg);
+  }
+  50% {
+    transform: scale(1.2) rotate(5deg);
+  }
+  75% {
+    transform: scale(1.1) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
 @media (max-width: 720px) {
   .history-page {
     grid-template-columns: 1fr;
