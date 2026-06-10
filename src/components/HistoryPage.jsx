@@ -72,14 +72,38 @@ function saveRecalledToStorage(data) {
 }
 
 function parseTimestamp(timestamp) {
-  return new Date(timestamp.replace(' ', 'T')).getTime()
+  if (!timestamp) return NaN
+  let t = String(timestamp).trim()
+  if (!t) return NaN
+
+  if (t.includes('T') || /^\d{4}-\d{2}-\d{2}[ T]/.test(t)) {
+    const parsed = new Date(t.replace(' ', 'T'))
+    return parsed.getTime()
+  }
+
+  if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(t)) {
+    const parts = t.split(/[\s\/:]/)
+    const year = parseInt(parts[0], 10)
+    const month = parseInt(parts[1], 10) - 1
+    const day = parseInt(parts[2], 10)
+    const hour = parseInt(parts[3] || '0', 10)
+    const min = parseInt(parts[4] || '0', 10)
+    const sec = parseInt(parts[5] || '0', 10)
+    const parsed = new Date(year, month, day, hour, min, sec)
+    return parsed.getTime()
+  }
+
+  const fallback = new Date(t)
+  return fallback.getTime()
 }
 
 function isWithinRecallWindow(msg) {
-  if (msg.recalled) return false
+  if (!msg || msg.recalled) return false
   const msgTime = parseTimestamp(msg.timestamp)
+  if (isNaN(msgTime)) return false
   const now = Date.now()
-  return now - msgTime <= RECALL_WINDOW_MS
+  const diff = now - msgTime
+  return diff >= 0 && diff <= RECALL_WINDOW_MS
 }
 
 function formatRecallTime(isoString) {

@@ -5,6 +5,33 @@ import DraftPage from './components/DraftPage'
 import { MOCK_MESSAGES, DEFAULT_TAGS } from './data/mockMessages'
 import './App.css'
 
+const RECALL_STORAGE_KEY = 'telex_recalled_messages'
+
+function loadRecalledFromStorage() {
+  try {
+    const raw = localStorage.getItem(RECALL_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function mergeRecalledMessages(messages) {
+  const recalled = loadRecalledFromStorage()
+  return messages.map((m) => {
+    if (recalled[m.id]) {
+      return {
+        ...m,
+        body: '',
+        preview: '[此报文已被撤回]',
+        recalled: true,
+        recalledAt: recalled[m.id].recalledAt,
+      }
+    }
+    return m
+  })
+}
+
 const TAG_COLORS = [
   '#4a90d9', '#e07030', '#8a9a6a', '#c4a035', '#e03030', '#9b59b6',
   '#16a085', '#2980b9', '#d35400', '#8e44ad', '#27ae60', '#c0392b',
@@ -19,7 +46,7 @@ const TABS = [
 export default function App() {
   const [tab, setTab] = useState('terminal')
   const [soundEnabled, setSoundEnabled] = useState(false)
-  const [messages, setMessages] = useState(MOCK_MESSAGES)
+  const [messages, setMessages] = useState(() => mergeRecalledMessages(MOCK_MESSAGES))
   const [drafts, setDrafts] = useState([])
   const [restoredDraftContent, setRestoredDraftContent] = useState(null)
   const [tags, setTags] = useState(DEFAULT_TAGS)

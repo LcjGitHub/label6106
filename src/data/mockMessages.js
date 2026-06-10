@@ -25,7 +25,7 @@ function pad(n) {
 
 function randomTime(index) {
   const now = new Date()
-  const daysAgo = (index - 1) % 35
+  const daysAgo = Math.max(0, (index - 1) % 35)
   const msgDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo)
   const year = msgDate.getFullYear()
   const month = pad(msgDate.getMonth() + 1)
