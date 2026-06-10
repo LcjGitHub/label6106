@@ -610,13 +610,10 @@ export default function DraftPage({
           </>
         ) : (
           <div className="draft-page__empty">
-            <p>← 选择一条草稿或新建草稿</p>
+            <p>← 选择一条草稿</p>
             <p className="draft-page__empty-hint">
-              草稿可帮助你暂存未发送的报文内容
+              点击上方「新建草稿」按钮创建新草稿
             </p>
-            <button type="button" className="draft-page__empty-btn" onClick={startCreate}>
-              + 新建草稿
-            </button>
           </div>
         )}
       </section>

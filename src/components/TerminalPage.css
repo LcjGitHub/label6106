@@ -284,6 +284,12 @@
   color: var(--label-muted);
 }
 
+.terminal-page__schedule-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .terminal-page__schedule-row {
   display: flex;
   gap: 0.8rem;

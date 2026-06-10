@@ -30,6 +30,7 @@ export default function TerminalPage({
   const [overwriteCandidate, setOverwriteCandidate] = useState(null)
   const [notificationPermission, setNotificationPermission] = useState(NotificationManager.getPermission())
   const [showSchedulePanel, setShowSchedulePanel] = useState(false)
+  const [scheduleName, setScheduleName] = useState('')
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleTime, setScheduleTime] = useState('')
   const inputRef = useRef(null)
@@ -224,6 +225,7 @@ export default function TerminalPage({
     now.setMinutes(now.getMinutes() + 1)
     const dateStr = now.toISOString().split('T')[0]
     const timeStr = now.toTimeString().slice(0, 5)
+    setScheduleName(trimmed.slice(0, 20))
     setScheduleDate(dateStr)
     setScheduleTime(timeStr)
     setShowSchedulePanel(true)
@@ -231,6 +233,7 @@ export default function TerminalPage({
 
   const closeSchedulePanel = () => {
     setShowSchedulePanel(false)
+    setScheduleName('')
     setScheduleDate('')
     setScheduleTime('')
   }
@@ -249,7 +252,7 @@ export default function TerminalPage({
     }
 
     const result = onAddScheduledTask?.({
-      name: trimmed.slice(0, 20) || '定时报文',
+      name: scheduleName.trim() || trimmed.slice(0, 20) || '定时报文',
       content: input,
       scheduledAt,
     })
@@ -457,32 +460,47 @@ export default function TerminalPage({
         {showSchedulePanel && (
           <div className="terminal-page__schedule-panel" ref={schedulePanelRef}>
             <label className="terminal-page__schedule-label">
-              选择发送时间
+              定时发送设置
             </label>
-            <div className="terminal-page__schedule-row">
+            <div className="terminal-page__schedule-form">
               <div className="terminal-page__schedule-input-group">
-                <label className="terminal-page__schedule-input-label" htmlFor="schedule-date">
-                  日期
+                <label className="terminal-page__schedule-input-label" htmlFor="schedule-name">
+                  任务名称
                 </label>
                 <input
-                  id="schedule-date"
-                  type="date"
+                  id="schedule-name"
+                  type="text"
                   className="terminal-page__schedule-input"
-                  value={scheduleDate}
-                  onChange={(e) => setScheduleDate(e.target.value)}
+                  value={scheduleName}
+                  onChange={(e) => setScheduleName(e.target.value)}
+                  placeholder="输入任务名称（可选）"
                 />
               </div>
-              <div className="terminal-page__schedule-input-group">
-                <label className="terminal-page__schedule-input-label" htmlFor="schedule-time">
-                  时间
-                </label>
-                <input
-                  id="schedule-time"
-                  type="time"
-                  className="terminal-page__schedule-input"
-                  value={scheduleTime}
-                  onChange={(e) => setScheduleTime(e.target.value)}
-                />
+              <div className="terminal-page__schedule-row">
+                <div className="terminal-page__schedule-input-group">
+                  <label className="terminal-page__schedule-input-label" htmlFor="schedule-date">
+                    发送日期
+                  </label>
+                  <input
+                    id="schedule-date"
+                    type="date"
+                    className="terminal-page__schedule-input"
+                    value={scheduleDate}
+                    onChange={(e) => setScheduleDate(e.target.value)}
+                  />
+                </div>
+                <div className="terminal-page__schedule-input-group">
+                  <label className="terminal-page__schedule-input-label" htmlFor="schedule-time">
+                    发送时间
+                  </label>
+                  <input
+                    id="schedule-time"
+                    type="time"
+                    className="terminal-page__schedule-input"
+                    value={scheduleTime}
+                    onChange={(e) => setScheduleTime(e.target.value)}
+                  />
+                </div>
               </div>
             </div>
             <div className="terminal-page__schedule-actions">

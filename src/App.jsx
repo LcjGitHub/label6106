@@ -72,11 +72,27 @@ export default function App() {
   const [tags, setTags] = useState(DEFAULT_TAGS)
   const [scheduledTasks, setScheduledTasks] = useState(() => loadScheduledFromStorage())
   const scheduledTimersRef = useRef(new Map())
+  const executingTasksRef = useRef(new Set())
 
   const executeScheduledTask = useCallback((taskId) => {
+    if (executingTasksRef.current.has(taskId)) {
+      return
+    }
+
+    const existingTimer = scheduledTimersRef.current.get(taskId)
+    if (existingTimer) {
+      clearTimeout(existingTimer)
+      scheduledTimersRef.current.delete(taskId)
+    }
+
+    executingTasksRef.current.add(taskId)
+
     setScheduledTasks((prev) => {
       const task = prev.find((t) => t.id === taskId)
-      if (!task) return prev
+      if (!task) {
+        executingTasksRef.current.delete(taskId)
+        return prev
+      }
 
       const payload = task.content.endsWith('\r\n') ? task.content : task.content + '\r\n'
       const trimmed = task.content.trim()
@@ -96,11 +112,13 @@ export default function App() {
         ...prevMsgs,
       ])
 
+      setTab('history')
+
       const remaining = prev.filter((t) => t.id !== taskId)
       saveScheduledToStorage(remaining)
+      executingTasksRef.current.delete(taskId)
       return remaining
     })
-    scheduledTimersRef.current.delete(taskId)
   }, [])
 
   const registerTimer = useCallback((task) => {
