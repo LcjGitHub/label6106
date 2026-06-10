@@ -278,6 +278,21 @@ export default function HistoryPage({
   }, [messages, selected, reset])
 
   useEffect(() => {
+    if (selected && filteredMessages.length > 0) {
+      const isInFiltered = filteredMessages.some((m) => m.id === selected.id)
+      if (!isInFiltered) {
+        setSelected(null)
+        setReplaying(false)
+        reset()
+      }
+    } else if (selected && filteredMessages.length === 0) {
+      setSelected(null)
+      setReplaying(false)
+      reset()
+    }
+  }, [filteredMessages, selected, reset])
+
+  useEffect(() => {
     if (!exportToast) return
     const timer = setTimeout(() => setExportToast(null), 2000)
     return () => clearTimeout(timer)
@@ -393,16 +408,11 @@ export default function HistoryPage({
               >
                 <span className="history-page__item-top">
                   <span className="history-page__item-id">
-                    <span
-                      className={`history-page__star-icon ${isStarred(msg.id) ? 'history-page__star-icon--active' : ''} ${starAnimatingId === msg.id ? 'history-page__star-icon--animating' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleToggleStar(msg.id)
-                      }}
-                      title={isStarred(msg.id) ? '取消收藏' : '收藏'}
-                    >
-                      ★
-                    </span>
+                    {isStarred(msg.id) && (
+                      <span className="history-page__star-icon history-page__star-icon--active" title="已收藏">
+                        ★
+                      </span>
+                    )}
                     #{String(msg.index).padStart(3, '0')}
                   </span>
                   <span className="history-page__item-top-right">
@@ -492,13 +502,21 @@ export default function HistoryPage({
             <header className="history-page__detail-header">
               <div className="history-page__detail-header-main">
                 <h3>
-                  <span
+                  <button
+                    type="button"
                     className={`history-page__detail-star ${isStarred(selected.id) ? 'history-page__detail-star--active' : ''} ${starAnimatingId === selected.id ? 'history-page__detail-star--animating' : ''}`}
                     onClick={() => handleToggleStar(selected.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        handleToggleStar(selected.id)
+                      }
+                    }}
                     title={isStarred(selected.id) ? '取消收藏' : '收藏'}
+                    aria-label={isStarred(selected.id) ? '取消收藏' : '收藏'}
                   >
                     ★
-                  </span>
+                  </button>
                   报文 #{String(selected.index).padStart(3, '0')}
                   {selected.recalled && (
                     <span className="history-page__recall-badge history-page__recall-badge--large">已撤回</span>
