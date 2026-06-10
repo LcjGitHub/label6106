@@ -48,14 +48,25 @@ const NotificationManager = (() => {
   }
 
   const showIncomingMessage = async (from, preview, onClick) => {
+    const permission = getPermission()
+    if (permission === 'denied') {
+      return { success: false, permission: 'denied' }
+    }
+    if (permission === 'unsupported') {
+      return { success: false, permission: 'unsupported' }
+    }
     const title = `新报文 - 来自 ${from}`
     const body = preview || '（无内容）'
-    return showNotification(title, {
+    const notification = await showNotification(title, {
       body,
       tag: `msg-${Date.now()}`,
       onClick,
       autoClose: 8000,
     })
+    if (notification) {
+      return { success: true, permission: 'granted', notification }
+    }
+    return { success: false, permission: getPermission() }
   }
 
   return {

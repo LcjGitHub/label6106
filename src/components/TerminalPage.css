@@ -156,6 +156,33 @@
   color: #e0a030;
 }
 
+.terminal-page__toast--error {
+  color: #e05050;
+}
+
+.terminal-page__toast--info {
+  color: #b0b0ff;
+}
+
+.terminal-page__notification-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--phosphor-dim);
+  background: rgba(255, 176, 0, 0.05);
+  border: 1px dashed var(--bezel-dark);
+}
+
+.terminal-page__notification-hint button {
+  padding: 0.2rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
 @keyframes toast-fade-in {
   from {
     opacity: 0;

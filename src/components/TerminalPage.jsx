@@ -27,6 +27,7 @@ export default function TerminalPage({
   const [draftNameInput, setDraftNameInput] = useState('')
   const [toast, setToast] = useState(null)
   const [overwriteCandidate, setOverwriteCandidate] = useState(null)
+  const [notificationPermission, setNotificationPermission] = useState(NotificationManager.getPermission())
   const inputRef = useRef(null)
   const flushedRef = useRef('')
   const draftMenuRef = useRef(null)
@@ -72,6 +73,17 @@ export default function TerminalPage({
 
   const showToastMsg = (msg, type = 'success') => {
     setToast({ msg, type })
+  }
+
+  const handleEnableNotification = async () => {
+    const granted = await NotificationManager.requestPermission()
+    const currentPermission = NotificationManager.getPermission()
+    setNotificationPermission(currentPermission)
+    if (granted) {
+      showToastMsg('通知权限已开启', 'success')
+    } else if (currentPermission === 'denied') {
+      showToastMsg('通知权限被拒绝，请在浏览器设置中手动开启', 'error')
+    }
   }
 
   const appendOutput = useCallback((chunk) => {
@@ -121,31 +133,23 @@ export default function TerminalPage({
   }, [input, isPrinting, onSendToHistory])
 
   const simulateReceive = useCallback(
-    (text, { from = 'UNKNOWN', to = 'LOCAL', priority = 'ROUTINE' } = {}) => {
+    (text, { from = 'UNKNOWN' } = {}) => {
       if (isPrinting) return
       const payload = text.endsWith('\r\n') ? text : text + '\r\n'
       const header = `\r\n<<< RX ${new Date().toLocaleTimeString('zh-CN', { hour12: false })}\r\n`
       const preview = text.replace(/\r\n/g, ' ').replace(/\r/g, ' ').replace(/\n/g, ' ').slice(0, 48).trim() + (text.length > 48 ? '…' : '')
 
-      onSendToHistory?.({
-        id: `rx-${Date.now()}`,
-        from,
-        to,
-        priority,
-        timestamp: new Date().toLocaleString('zh-CN'),
-        preview,
-        body: payload,
-      })
-
-      NotificationManager.showIncomingMessage(from, preview, () => {
-        window.focus()
+      NotificationManager.showIncomingMessage(from, preview).then((result) => {
+        if (!result?.success) {
+          showToastMsg(`新报文 - 来自 ${from}：${preview}`, 'info')
+        }
       })
 
       flushedRef.current = ''
       setIncoming(header + payload)
       setIsPrinting(true)
     },
-    [isPrinting, onSendToHistory],
+    [isPrinting],
   )
 
   const handleKeyDown = (e) => {
@@ -292,7 +296,7 @@ export default function TerminalPage({
             onClick={() =>
               simulateReceive(
                 'TEST MSG\r\n逐字打印演示: THE QUICK BROWN FOX\r\n回车覆盖: ALFA\rBETA\r\n换行: LINE-1\r\nLINE-2\r\n',
-                { from: 'TEST-STATION', to: 'LOCAL', priority: 'ROUTINE' },
+                { from: 'TEST-STATION' },
               )
             }
             disabled={isPrinting}
@@ -309,7 +313,18 @@ export default function TerminalPage({
           >
             清屏
           </button>
+          {notificationPermission === 'default' && (
+            <button type="button" onClick={handleEnableNotification}>
+              开启通知
+            </button>
+          )}
         </div>
+
+        {notificationPermission === 'denied' && (
+          <div className="terminal-page__notification-hint">
+            <span>通知权限被拒绝，新报文提醒将以页面内提示显示。如需系统通知，请在浏览器设置中开启本站点的通知权限。</span>
+          </div>
+        )}
 
         {showSaveDraftPanel && (
           <div className="terminal-page__save-panel" ref={savePanelRef}>
