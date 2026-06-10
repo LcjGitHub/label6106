@@ -309,6 +309,10 @@ export default function App() {
     )
   }
 
+  const deleteMessages = (messageIds) => {
+    setMessages((prev) => prev.filter((m) => !messageIds.includes(m.id)))
+  }
+
   return (
     <div className="app">
       <header className="app__header">
@@ -378,6 +382,7 @@ export default function App() {
             onAddTagToMessage={addTagToMessage}
             onRemoveTagFromMessage={removeTagFromMessage}
             onRecallMessage={recallMessage}
+            onDeleteMessages={deleteMessages}
           />
         )}
       </main>

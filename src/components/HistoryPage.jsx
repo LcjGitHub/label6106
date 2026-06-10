@@ -137,6 +137,7 @@ export default function HistoryPage({
   onAddTagToMessage,
   onRemoveTagFromMessage,
   onRecallMessage,
+  onDeleteMessages,
 }) {
   const [selected, setSelected] = useState(null)
   const [replaying, setReplaying] = useState(false)
@@ -149,6 +150,9 @@ export default function HistoryPage({
   const [starFilter, setStarFilter] = useState(false)
   const [starred, setStarred] = useState(() => loadStarredFromStorage())
   const [starAnimatingId, setStarAnimatingId] = useState(null)
+  const [selectedIds, setSelectedIds] = useState(() => new Set())
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteToast, setDeleteToast] = useState(null)
   const { playClick, playBell } = useTypewriterSound(soundEnabled)
 
   useEffect(() => {
@@ -193,6 +197,21 @@ export default function HistoryPage({
     return !!starred[messageId]
   }
 
+  const handleToggleSelect = (messageId, e) => {
+    if (e) {
+      e.stopPropagation()
+    }
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(messageId)) {
+        next.delete(messageId)
+      } else {
+        next.add(messageId)
+      }
+      return next
+    })
+  }
+
   const filteredMessages = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase()
     return messages.filter((msg) => {
@@ -227,6 +246,18 @@ export default function HistoryPage({
       return true
     })
   }, [messages, searchKeyword, priorityFilter, timeRangeFilter, selectedTagIds, starFilter, starred])
+
+  const handleSelectAll = () => {
+    const allIds = filteredMessages.map((m) => m.id)
+    setSelectedIds(new Set(allIds))
+  }
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set())
+  }
+
+  const isAllSelected = filteredMessages.length > 0 && filteredMessages.every((m) => selectedIds.has(m.id))
+  const isPartialSelected = selectedIds.size > 0 && !isAllSelected
 
   const handleToggleTagFilter = (tagId) => {
     if (tagId === null) {
@@ -298,8 +329,38 @@ export default function HistoryPage({
     return () => clearTimeout(timer)
   }, [exportToast])
 
+  useEffect(() => {
+    if (!deleteToast) return
+    const timer = setTimeout(() => setDeleteToast(null), 2000)
+    return () => clearTimeout(timer)
+  }, [deleteToast])
+
   const showExportToast = (msg) => {
     setExportToast({ msg })
+  }
+
+  const handleRequestBatchDelete = () => {
+    setConfirmDelete(true)
+  }
+
+  const handleConfirmBatchDelete = () => {
+    if (onDeleteMessages && selectedIds.size > 0) {
+      const idsToDelete = Array.from(selectedIds)
+      const count = idsToDelete.length
+      onDeleteMessages(idsToDelete)
+      setSelectedIds(new Set())
+      setDeleteToast({ msg: `已删除 ${count} 条报文` })
+      if (selected && idsToDelete.includes(selected.id)) {
+        setSelected(null)
+        setReplaying(false)
+        reset()
+      }
+    }
+    setConfirmDelete(false)
+  }
+
+  const handleCancelBatchDelete = () => {
+    setConfirmDelete(false)
   }
 
   const handleExportText = () => {
@@ -397,10 +458,52 @@ export default function HistoryPage({
             onCreateTag={onCreateTag}
           />
         </div>
+        {selectedIds.size > 0 && (
+          <div className="history-page__batch-toolbar">
+            <label className="history-page__batch-select-all">
+              <input
+                type="checkbox"
+                checked={isAllSelected}
+                ref={(el) => {
+                  if (el) el.indeterminate = isPartialSelected
+                }}
+                onChange={() => {
+                  if (isAllSelected) {
+                    handleClearSelection()
+                  } else {
+                    handleSelectAll()
+                  }
+                }}
+              />
+              <span>全选</span>
+            </label>
+            <span className="history-page__batch-count">
+              已选 {selectedIds.size} 条
+            </span>
+            <button
+              type="button"
+              className="history-page__batch-delete-btn"
+              onClick={handleRequestBatchDelete}
+            >
+              批量删除
+            </button>
+          </div>
+        )}
         <ul className="history-page__list" role="list">
           {filteredMessages.length > 0 ? (
             filteredMessages.map((msg) => (
-            <li key={msg.id} className={msg.recalled ? 'history-page__list-item--recalled' : ''}>
+            <li
+              key={msg.id}
+              className={`${msg.recalled ? 'history-page__list-item--recalled' : ''} ${selectedIds.has(msg.id) ? 'history-page__list-item--selected' : ''}`}
+            >
+              <div className="history-page__item-checkbox">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.has(msg.id)}
+                  onChange={(e) => handleToggleSelect(msg.id, e)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
               <button
                 type="button"
                 className={`history-page__item ${selected?.id === msg.id ? 'history-page__item--active' : ''} ${msg.recalled ? 'history-page__item--recalled' : ''}`}
@@ -495,6 +598,32 @@ export default function HistoryPage({
                 </button>
               </div>
             </div>
+          </div>
+        )}
+        {confirmDelete && (
+          <div className="history-page__modal-overlay" onClick={handleCancelBatchDelete}>
+            <div className="history-page__modal" onClick={(e) => e.stopPropagation()}>
+              <h4 className="history-page__modal-title">确认批量删除</h4>
+              <p className="history-page__modal-message">
+                您确定要删除选中的 {selectedIds.size} 条报文吗？
+              </p>
+              <p className="history-page__modal-hint">
+                删除后报文将无法恢复，请谨慎操作。
+              </p>
+              <div className="history-page__modal-actions">
+                <button type="button" className="history-page__modal-btn--cancel" onClick={handleCancelBatchDelete}>
+                  取消
+                </button>
+                <button type="button" className="history-page__modal-btn--confirm" onClick={handleConfirmBatchDelete}>
+                  确认删除
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        {deleteToast && (
+          <div className="history-page__toast history-page__toast--global">
+            {deleteToast.msg}
           </div>
         )}
         {selected ? (
