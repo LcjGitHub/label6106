@@ -8,14 +8,22 @@ export default function TagFilter({
 }) {
   const [newTagName, setNewTagName] = useState('')
   const [showCreate, setShowCreate] = useState(false)
+  const [error, setError] = useState('')
 
   const handleCreateSubmit = (e) => {
     e.preventDefault()
     const trimmed = newTagName.trim()
-    if (trimmed) {
-      onCreateTag(trimmed)
+    if (!trimmed) {
+      setError('标签名称不能为空')
+      return
+    }
+    const result = onCreateTag(trimmed)
+    if (result.success) {
       setNewTagName('')
       setShowCreate(false)
+      setError('')
+    } else {
+      setError(result.error)
     }
   }
 
@@ -23,7 +31,19 @@ export default function TagFilter({
     if (e.key === 'Escape') {
       setShowCreate(false)
       setNewTagName('')
+      setError('')
     }
+  }
+
+  const handleNameChange = (e) => {
+    setNewTagName(e.target.value)
+    if (error) setError('')
+  }
+
+  const handleToggleCreate = () => {
+    setShowCreate((v) => !v)
+    setError('')
+    if (showCreate) setNewTagName('')
   }
 
   return (
@@ -33,7 +53,7 @@ export default function TagFilter({
         <button
           type="button"
           className="tag-filter__create-btn"
-          onClick={() => setShowCreate((v) => !v)}
+          onClick={handleToggleCreate}
         >
             {showCreate ? '取消' : '+ 新建标签'}
         </button>
@@ -43,10 +63,10 @@ export default function TagFilter({
         <form className="tag-filter__create-form" onSubmit={handleCreateSubmit}>
           <input
             type="text"
-            className="tag-filter__create-input"
+            className={`tag-filter__create-input ${error ? 'tag-filter__create-input--error' : ''}`}
             placeholder="输入标签名称..."
             value={newTagName}
-            onChange={(e) => setNewTagName(e.target.value)}
+            onChange={handleNameChange}
             onKeyDown={handleKeyDown}
             autoFocus
           />
@@ -54,6 +74,9 @@ export default function TagFilter({
             创建
           </button>
         </form>
+      )}
+      {error && showCreate && (
+        <div className="tag-filter__error">{error}</div>
       )}
 
       <div className="tag-filter__list">

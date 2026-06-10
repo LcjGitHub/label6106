@@ -549,6 +549,28 @@
   color: var(--phosphor);
 }
 
+.tag-filter__error {
+  font-size: 0.68rem;
+  color: #e03030;
+  padding: 0.2rem 0.3rem;
+  background: rgba(224, 48, 48, 0.1);
+  border: 1px solid rgba(224, 48, 48, 0.4);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  animation: tag-filter-error-shake 0.3s ease;
+}
+
+@keyframes tag-filter-error-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-2px); }
+  75% { transform: translateX(2px); }
+}
+
+.tag-filter__create-input--error {
+  border-color: #e03030 !important;
+  box-shadow: 0 0 0 1px rgba(224, 48, 48, 0.3) inset;
+}
+
 @media (max-width: 720px) {
   .history-page {
     grid-template-columns: 1fr;

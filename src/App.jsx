@@ -81,16 +81,20 @@ export default function App() {
 
   const createTag = (name) => {
     const trimmedName = name.trim()
-    if (!trimmedName) return null
+    if (!trimmedName) {
+      return { success: false, error: '标签名称不能为空' }
+    }
     const exists = tags.some((t) => t.name === trimmedName)
-    if (exists) return null
+    if (exists) {
+      return { success: false, error: '标签名称已存在' }
+    }
     const newTag = {
       id: `tag-${Date.now()}`,
       name: trimmedName,
       color: TAG_COLORS[tags.length % TAG_COLORS.length],
     }
     setTags((prev) => [...prev, newTag])
-    return newTag
+    return { success: true, tag: newTag }
   }
 
   const addTagToMessage = (messageId, tagId) => {

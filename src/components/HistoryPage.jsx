@@ -140,12 +140,17 @@ export default function HistoryPage({
   })
 
   useEffect(() => {
-    if (selected && !filteredMessages.some((m) => m.id === selected.id)) {
-      setSelected(null)
-      setReplaying(false)
-      reset()
+    if (selected) {
+      const latest = messages.find((m) => m.id === selected.id)
+      if (latest && latest !== selected) {
+        setSelected(latest)
+      } else if (!latest) {
+        setSelected(null)
+        setReplaying(false)
+        reset()
+      }
     }
-  }, [filteredMessages, selected, reset])
+  }, [messages, selected, reset])
 
   useEffect(() => {
     if (!exportToast) return
