@@ -7,14 +7,36 @@ import './TerminalPage.css'
 const WELCOME =
   '电传打字机终端 v1.0 就绪\r\n输入报文后按 Enter 发送，或使用下方快捷操作\r\n---\r\n'
 
-export default function TerminalPage({ soundEnabled, onSendToHistory }) {
+export default function TerminalPage({ soundEnabled, onSendToHistory, onSaveDraft, drafts }) {
   const [input, setInput] = useState('')
   const [outputLog, setOutputLog] = useState(WELCOME)
   const [incoming, setIncoming] = useState('')
   const [isPrinting, setIsPrinting] = useState(false)
+  const [showDraftMenu, setShowDraftMenu] = useState(false)
   const inputRef = useRef(null)
   const flushedRef = useRef('')
+  const draftMenuRef = useRef(null)
   const { playClick, playBell } = useTypewriterSound(soundEnabled)
+
+  useEffect(() => {
+    const restored = sessionStorage.getItem('restored-draft')
+    if (restored) {
+      setInput(restored)
+      sessionStorage.removeItem('restored-draft')
+      inputRef.current?.focus()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showDraftMenu) return
+    const handleClickOutside = (e) => {
+      if (draftMenuRef.current && !draftMenuRef.current.contains(e.target)) {
+        setShowDraftMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showDraftMenu])
 
   const appendOutput = useCallback((chunk) => {
     setOutputLog((prev) => prev + chunk)
@@ -81,6 +103,23 @@ export default function TerminalPage({ soundEnabled, onSendToHistory }) {
     }
   }
 
+  const handleSaveDraft = () => {
+    const trimmed = input.trim()
+    if (!trimmed) return
+    const name = window.prompt('请输入草稿名称（可选）：', trimmed.slice(0, 20))
+    if (name === null) return
+    onSaveDraft?.({
+      name: name.trim(),
+      content: input,
+    })
+  }
+
+  const handleRestoreDraft = (draft) => {
+    setInput(draft.content)
+    setShowDraftMenu(false)
+    inputRef.current?.focus()
+  }
+
   const fullOutput = outputLog + (isPrinting ? displayed : '')
 
   useEffect(() => {
@@ -129,6 +168,37 @@ export default function TerminalPage({ soundEnabled, onSendToHistory }) {
           <button type="button" onClick={sendMessage} disabled={isPrinting || !input.trim()}>
             发送 Enter
           </button>
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            disabled={isPrinting || !input.trim()}
+          >
+            保存草稿
+          </button>
+          <div className="terminal-page__draft-menu" ref={draftMenuRef}>
+            <button
+              type="button"
+              onClick={() => setShowDraftMenu((v) => !v)}
+              disabled={isPrinting || drafts.length === 0}
+            >
+              恢复草稿 ▾
+            </button>
+            {showDraftMenu && drafts.length > 0 && (
+              <div className="terminal-page__draft-dropdown">
+                {drafts.map((draft) => (
+                  <button
+                    key={draft.id}
+                    type="button"
+                    className="terminal-page__draft-item"
+                    onClick={() => handleRestoreDraft(draft)}
+                  >
+                    <span className="terminal-page__draft-item-name">{draft.name}</span>
+                    <span className="terminal-page__draft-item-time">{draft.createdAt}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <button
             type="button"
             onClick={() =>

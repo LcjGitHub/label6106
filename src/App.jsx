@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import TerminalPage from './components/TerminalPage'
 import HistoryPage from './components/HistoryPage'
+import DraftPage from './components/DraftPage'
 import { MOCK_MESSAGES } from './data/mockMessages'
 import './App.css'
 
 const TABS = [
   { id: 'terminal', label: '终端' },
+  { id: 'drafts', label: '草稿' },
   { id: 'history', label: '报文历史' },
 ]
 
@@ -13,6 +15,7 @@ export default function App() {
   const [tab, setTab] = useState('terminal')
   const [soundEnabled, setSoundEnabled] = useState(false)
   const [messages, setMessages] = useState(MOCK_MESSAGES)
+  const [drafts, setDrafts] = useState([])
 
   const handleSendToHistory = (msg) => {
     setMessages((prev) => [
@@ -22,6 +25,28 @@ export default function App() {
       },
       ...prev,
     ])
+  }
+
+  const addDraft = (draft) => {
+    setDrafts((prev) => [
+      {
+        id: `draft-${Date.now()}`,
+        name: draft.name || `草稿 ${prev.length + 1}`,
+        content: draft.content || '',
+        createdAt: new Date().toLocaleString('zh-CN'),
+      },
+      ...prev,
+    ])
+  }
+
+  const updateDraft = (id, updates) => {
+    setDrafts((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, ...updates } : d))
+    )
+  }
+
+  const deleteDraft = (id) => {
+    setDrafts((prev) => prev.filter((d) => d.id !== id))
   }
 
   return (
@@ -59,9 +84,24 @@ export default function App() {
       </header>
 
       <main className="app__main" role="tabpanel">
-        {tab === 'terminal' ? (
-          <TerminalPage soundEnabled={soundEnabled} onSendToHistory={handleSendToHistory} />
-        ) : (
+        {tab === 'terminal' && (
+          <TerminalPage
+            soundEnabled={soundEnabled}
+            onSendToHistory={handleSendToHistory}
+            onSaveDraft={addDraft}
+            drafts={drafts}
+          />
+        )}
+        {tab === 'drafts' && (
+          <DraftPage
+            drafts={drafts}
+            onAddDraft={addDraft}
+            onUpdateDraft={updateDraft}
+            onDeleteDraft={deleteDraft}
+            onSwitchToTerminal={() => setTab('terminal')}
+          />
+        )}
+        {tab === 'history' && (
           <HistoryPage messages={messages} soundEnabled={soundEnabled} />
         )}
       </main>
