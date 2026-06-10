@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import TeletypeOutput from './TeletypeOutput'
 import { useTypewriter } from '../hooks/useTypewriter'
 import { useTypewriterSound } from '../hooks/useTypewriterSound'
+import { exportAsText, exportAsJson } from '../utils/exportUtils'
 import './HistoryPage.css'
 
 const PRIORITY_CLASS = {
@@ -210,6 +211,12 @@ export default function HistoryPage({ messages, soundEnabled }) {
                 )}
                 <button type="button" onClick={() => openMessage(selected)}>
                   重播
+                </button>
+                <button type="button" onClick={() => exportAsText(selected)}>
+                  导出TXT
+                </button>
+                <button type="button" onClick={() => exportAsJson(selected)}>
+                  导出JSON
                 </button>
                 <button type="button" onClick={closeDetail}>
                   关闭
