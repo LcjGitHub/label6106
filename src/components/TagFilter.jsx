@@ -1,11 +1,6 @@
 import { useState } from 'react'
 
-export default function TagFilter({
-  tags,
-  selectedTagIds,
-  onToggleTag,
-  onCreateTag,
-}) {
+export default function TagFilter({ tags, selectedTagIds, onToggleTag, onCreateTag }) {
   const [newTagName, setNewTagName] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [error, setError] = useState('')
@@ -50,12 +45,8 @@ export default function TagFilter({
     <div className="tag-filter">
       <div className="tag-filter__header">
         <span className="tag-filter__label">标签筛选</span>
-        <button
-          type="button"
-          className="tag-filter__create-btn"
-          onClick={handleToggleCreate}
-        >
-            {showCreate ? '取消' : '+ 新建标签'}
+        <button type="button" className="tag-filter__create-btn" onClick={handleToggleCreate}>
+          {showCreate ? '取消' : '+ 新建标签'}
         </button>
       </div>
 
@@ -75,9 +66,7 @@ export default function TagFilter({
           </button>
         </form>
       )}
-      {error && showCreate && (
-        <div className="tag-filter__error">{error}</div>
-      )}
+      {error && showCreate && <div className="tag-filter__error">{error}</div>}
 
       <div className="tag-filter__list">
         <button
@@ -91,18 +80,17 @@ export default function TagFilter({
           const selected = selectedTagIds.includes(tag.id)
           return (
             <button
-            key={tag.id}
-            type="button"
-            className={`tag-filter__chip ${selected ? 'tag-filter__chip--selected' : ''}`}
-            style={{ '--tag-color': tag.color }}
-            onClick={() => onToggleTag(tag.id)}
-            title={tag.name}
-          >
-            <span
-              className="tag-filter__chip-dot" style={{ background: tag.color }} />
-            {tag.name}
-            {selected && <span className="tag-filter__chip-check">✓</span>}
-          </button>
+              key={tag.id}
+              type="button"
+              className={`tag-filter__chip ${selected ? 'tag-filter__chip--selected' : ''}`}
+              style={{ '--tag-color': tag.color }}
+              onClick={() => onToggleTag(tag.id)}
+              title={tag.name}
+            >
+              <span className="tag-filter__chip-dot" style={{ background: tag.color }} />
+              {tag.name}
+              {selected && <span className="tag-filter__chip-check">✓</span>}
+            </button>
           )
         })}
       </div>
@@ -110,11 +98,7 @@ export default function TagFilter({
       {selectedTagIds.length > 0 && (
         <div className="tag-filter__status">
           <span>已筛选 {selectedTagIds.length} 个标签</span>
-          <button
-            type="button"
-            className="tag-filter__clear"
-            onClick={() => onToggleTag(null)}
-          >
+          <button type="button" className="tag-filter__clear" onClick={() => onToggleTag(null)}>
             清除
           </button>
         </div>

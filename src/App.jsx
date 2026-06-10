@@ -48,13 +48,22 @@ function loadScheduledFromStorage() {
 function saveScheduledToStorage(tasks) {
   try {
     localStorage.setItem(SCHEDULED_STORAGE_KEY, JSON.stringify(tasks))
-  } catch {
-  }
+  } catch {}
 }
 
 const TAG_COLORS = [
-  '#4a90d9', '#e07030', '#8a9a6a', '#c4a035', '#e03030', '#9b59b6',
-  '#16a085', '#2980b9', '#d35400', '#8e44ad', '#27ae60', '#c0392b',
+  '#4a90d9',
+  '#e07030',
+  '#8a9a6a',
+  '#c4a035',
+  '#e03030',
+  '#9b59b6',
+  '#16a085',
+  '#2980b9',
+  '#d35400',
+  '#8e44ad',
+  '#27ae60',
+  '#c0392b',
 ]
 
 const TABS = [
@@ -128,19 +137,22 @@ export default function App() {
     })
   }, [])
 
-  const registerTimer = useCallback((task) => {
-    const existing = scheduledTimersRef.current.get(task.id)
-    if (existing) {
-      clearTimeout(existing)
-    }
-    const delay = task.scheduledAt - Date.now()
-    if (delay <= 0) {
-      executeScheduledTask(task.id)
-      return
-    }
-    const timerId = setTimeout(() => executeScheduledTask(task.id), delay)
-    scheduledTimersRef.current.set(task.id, timerId)
-  }, [executeScheduledTask])
+  const registerTimer = useCallback(
+    (task) => {
+      const existing = scheduledTimersRef.current.get(task.id)
+      if (existing) {
+        clearTimeout(existing)
+      }
+      const delay = task.scheduledAt - Date.now()
+      if (delay <= 0) {
+        executeScheduledTask(task.id)
+        return
+      }
+      const timerId = setTimeout(() => executeScheduledTask(task.id), delay)
+      scheduledTimersRef.current.set(task.id, timerId)
+    },
+    [executeScheduledTask]
+  )
 
   const clearAllTimers = useCallback(() => {
     scheduledTimersRef.current.forEach((timerId) => clearTimeout(timerId))
@@ -150,6 +162,7 @@ export default function App() {
   useEffect(() => {
     scheduledTasks.forEach((task) => registerTimer(task))
     return () => clearAllTimers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -241,7 +254,11 @@ export default function App() {
     setDrafts((prev) =>
       prev.map((d) => {
         if (d.id !== id) return d
-        const updated = { ...d, content: typeof data === 'string' ? data : data.content ?? d.content, updatedAt: new Date().toLocaleString('zh-CN') }
+        const updated = {
+          ...d,
+          content: typeof data === 'string' ? data : (data.content ?? d.content),
+          updatedAt: new Date().toLocaleString('zh-CN'),
+        }
         if (typeof data !== 'string' && data.attachments !== undefined) {
           if (data.attachments && data.attachments.length > 0) {
             updated.attachments = data.attachments
@@ -255,9 +272,7 @@ export default function App() {
   }
 
   const updateDraft = (id, updates) => {
-    setDrafts((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, ...updates } : d))
-    )
+    setDrafts((prev) => prev.map((d) => (d.id === id ? { ...d, ...updates } : d)))
   }
 
   const deleteDraft = (id) => {
@@ -298,20 +313,14 @@ export default function App() {
   const addTagToMessage = (messageId, tagId) => {
     setMessages((prev) =>
       prev.map((m) =>
-        m.id === messageId && !m.tags.includes(tagId)
-          ? { ...m, tags: [...m.tags, tagId] }
-          : m
+        m.id === messageId && !m.tags.includes(tagId) ? { ...m, tags: [...m.tags, tagId] } : m
       )
     )
   }
 
   const removeTagFromMessage = (messageId, tagId) => {
     setMessages((prev) =>
-      prev.map((m) =>
-        m.id === messageId
-          ? { ...m, tags: m.tags.filter((t) => t !== tagId) }
-          : m
-      )
+      prev.map((m) => (m.id === messageId ? { ...m, tags: m.tags.filter((t) => t !== tagId) } : m))
     )
   }
 

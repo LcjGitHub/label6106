@@ -5,8 +5,7 @@ import { useTypewriterSound } from '../hooks/useTypewriterSound'
 import NotificationManager from '../utils/NotificationManager'
 import './TerminalPage.css'
 
-const WELCOME =
-  '电传打字机终端 v1.0 就绪\r\n输入报文后按 Enter 发送，或使用下方快捷操作\r\n---\r\n'
+const WELCOME = '电传打字机终端 v1.0 就绪\r\n输入报文后按 Enter 发送，或使用下方快捷操作\r\n---\r\n'
 
 export default function TerminalPage({
   soundEnabled,
@@ -28,7 +27,9 @@ export default function TerminalPage({
   const [draftNameInput, setDraftNameInput] = useState('')
   const [toast, setToast] = useState(null)
   const [overwriteCandidate, setOverwriteCandidate] = useState(null)
-  const [notificationPermission, setNotificationPermission] = useState(NotificationManager.getPermission())
+  const [notificationPermission, setNotificationPermission] = useState(
+    NotificationManager.getPermission()
+  )
   const [showSchedulePanel, setShowSchedulePanel] = useState(false)
   const [scheduleName, setScheduleName] = useState('')
   const [scheduleDate, setScheduleDate] = useState('')
@@ -190,7 +191,9 @@ export default function TerminalPage({
     if ((!trimmed && attachments.length === 0) || isPrinting) return
 
     const payload = trimmed
-      ? (trimmed.endsWith('\r\n') ? trimmed : trimmed + '\r\n')
+      ? trimmed.endsWith('\r\n')
+        ? trimmed
+        : trimmed + '\r\n'
       : `[附件报文] ${attachments.length} 个附件\r\n`
     const echo = `\r\n>>> TX ${new Date().toLocaleTimeString('zh-CN', { hour12: false })}\r\n${payload}\r\n`
     const preview = trimmed
@@ -228,7 +231,9 @@ export default function TerminalPage({
       if (isPrinting) return
       const payload = text.endsWith('\r\n') ? text : text + '\r\n'
       const header = `\r\n<<< RX ${new Date().toLocaleTimeString('zh-CN', { hour12: false })}\r\n`
-      const preview = text.replace(/\r\n/g, ' ').replace(/\r/g, ' ').replace(/\n/g, ' ').slice(0, 48).trim() + (text.length > 48 ? '…' : '')
+      const preview =
+        text.replace(/\r\n/g, ' ').replace(/\r/g, ' ').replace(/\n/g, ' ').slice(0, 48).trim() +
+        (text.length > 48 ? '…' : '')
 
       NotificationManager.showIncomingMessage(from, preview).then((result) => {
         if (!result?.success) {
@@ -240,7 +245,7 @@ export default function TerminalPage({
       setIncoming(header + payload)
       setIsPrinting(true)
     },
-    [isPrinting],
+    [isPrinting]
   )
 
   const handleKeyDown = (e) => {
@@ -276,10 +281,35 @@ export default function TerminalPage({
     }
 
     if (existing) {
-      onOverwriteDraft?.(existing.id, { content, attachments: attachments.length > 0 ? attachments.map((att) => ({ id: att.id, name: att.name, size: att.size, type: att.type, data: att.data })) : null })
+      onOverwriteDraft?.(existing.id, {
+        content,
+        attachments:
+          attachments.length > 0
+            ? attachments.map((att) => ({
+                id: att.id,
+                name: att.name,
+                size: att.size,
+                type: att.type,
+                data: att.data,
+              }))
+            : null,
+      })
       showToastMsg(`已更新草稿「${name}」`)
     } else {
-      onSaveDraft?.({ name, content, attachments: attachments.length > 0 ? attachments.map((att) => ({ id: att.id, name: att.name, size: att.size, type: att.type, data: att.data })) : null })
+      onSaveDraft?.({
+        name,
+        content,
+        attachments:
+          attachments.length > 0
+            ? attachments.map((att) => ({
+                id: att.id,
+                name: att.name,
+                size: att.size,
+                type: att.type,
+                data: att.data,
+              }))
+            : null,
+      })
       showToastMsg(`草稿「${name || '未命名'}」已保存`)
     }
     closeSaveDraftPanel()
@@ -287,7 +317,19 @@ export default function TerminalPage({
 
   const handleOverwriteConfirm = () => {
     if (!overwriteCandidate) return
-    onOverwriteDraft?.(overwriteCandidate.id, { content: input, attachments: attachments.length > 0 ? attachments.map((att) => ({ id: att.id, name: att.name, size: att.size, type: att.type, data: att.data })) : null })
+    onOverwriteDraft?.(overwriteCandidate.id, {
+      content: input,
+      attachments:
+        attachments.length > 0
+          ? attachments.map((att) => ({
+              id: att.id,
+              name: att.name,
+              size: att.size,
+              type: att.type,
+              data: att.data,
+            }))
+          : null,
+    })
     showToastMsg(`已覆盖草稿「${overwriteCandidate.name}」`)
     closeSaveDraftPanel()
   }
@@ -420,9 +462,7 @@ export default function TerminalPage({
 
         {attachments.length > 0 && (
           <div className="terminal-page__attachments">
-            <div className="terminal-page__attachments-label">
-              附件 ({attachments.length})
-            </div>
+            <div className="terminal-page__attachments-label">附件 ({attachments.length})</div>
             <div className="terminal-page__attachments-list">
               {attachments.map((att) => (
                 <div key={att.id} className="terminal-page__attachment-item">
@@ -430,9 +470,7 @@ export default function TerminalPage({
                   <span className="terminal-page__attachment-name" title={att.name}>
                     {att.name}
                   </span>
-                  <span className="terminal-page__attachment-size">
-                    {formatFileSize(att.size)}
-                  </span>
+                  <span className="terminal-page__attachment-size">{formatFileSize(att.size)}</span>
                   <button
                     type="button"
                     className="terminal-page__attachment-remove"
@@ -459,11 +497,7 @@ export default function TerminalPage({
           >
             📎 附件
           </button>
-          <button
-            type="button"
-            onClick={openSaveDraftPanel}
-            disabled={isPrinting || !hasContent}
-          >
+          <button type="button" onClick={openSaveDraftPanel} disabled={isPrinting || !hasContent}>
             保存草稿
           </button>
           <button
@@ -503,7 +537,7 @@ export default function TerminalPage({
             onClick={() =>
               simulateReceive(
                 'TEST MSG\r\n逐字打印演示: THE QUICK BROWN FOX\r\n回车覆盖: ALFA\rBETA\r\n换行: LINE-1\r\nLINE-2\r\n',
-                { from: 'TEST-STATION' },
+                { from: 'TEST-STATION' }
               )
             }
             disabled={isPrinting}
@@ -529,7 +563,9 @@ export default function TerminalPage({
 
         {notificationPermission === 'denied' && (
           <div className="terminal-page__notification-hint">
-            <span>通知权限被拒绝，新报文提醒将以页面内提示显示。如需系统通知，请在浏览器设置中开启本站点的通知权限。</span>
+            <span>
+              通知权限被拒绝，新报文提醒将以页面内提示显示。如需系统通知，请在浏览器设置中开启本站点的通知权限。
+            </span>
           </div>
         )}
 
@@ -544,10 +580,7 @@ export default function TerminalPage({
                   <button type="button" onClick={handleOverwriteConfirm}>
                     覆盖
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => setOverwriteCandidate(null)}
-                  >
+                  <button type="button" onClick={() => setOverwriteCandidate(null)}>
                     改名保存
                   </button>
                   <button type="button" onClick={closeSaveDraftPanel}>
@@ -593,9 +626,7 @@ export default function TerminalPage({
 
         {showSchedulePanel && (
           <div className="terminal-page__schedule-panel" ref={schedulePanelRef}>
-            <label className="terminal-page__schedule-label">
-              定时发送设置
-            </label>
+            <label className="terminal-page__schedule-label">定时发送设置</label>
             <div className="terminal-page__schedule-form">
               <div className="terminal-page__schedule-input-group">
                 <label className="terminal-page__schedule-input-label" htmlFor="schedule-name">
@@ -645,7 +676,9 @@ export default function TerminalPage({
                     {attachments.map((att) => (
                       <div key={att.id} className="terminal-page__schedule-attachment-item">
                         <span className="terminal-page__schedule-attachment-name">{att.name}</span>
-                        <span className="terminal-page__schedule-attachment-size">{formatFileSize(att.size)}</span>
+                        <span className="terminal-page__schedule-attachment-size">
+                          {formatFileSize(att.size)}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -664,9 +697,7 @@ export default function TerminalPage({
                 取消
               </button>
             </div>
-            <p className="terminal-page__schedule-hint">
-              到达设定时间后，报文将自动发送到历史记录
-            </p>
+            <p className="terminal-page__schedule-hint">到达设定时间后，报文将自动发送到历史记录</p>
           </div>
         )}
       </div>

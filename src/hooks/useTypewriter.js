@@ -3,7 +3,10 @@ import { visibleLength, sliceTeletypeText } from '../utils/teletype'
 
 const DEFAULT_SPEED = 28
 
-export function useTypewriter(text, { speed = DEFAULT_SPEED, active = true, onTick, onComplete } = {}) {
+export function useTypewriter(
+  text,
+  { speed = DEFAULT_SPEED, active = true, onTick, onComplete } = {}
+) {
   const [visibleCount, setVisibleCount] = useState(0)
   const [done, setDone] = useState(false)
   const timerRef = useRef(null)

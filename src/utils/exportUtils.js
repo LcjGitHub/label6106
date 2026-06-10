@@ -1,8 +1,6 @@
 function generateFilename(message, extension) {
   const safeId = (message.id || 'message').replace(/[\\/:*?"<>|]/g, '_')
-  const timestamp = (message.timestamp || '')
-    .replace(/[\\/:*?"<>|]/g, '')
-    .replace(/\s+/g, '_')
+  const timestamp = (message.timestamp || '').replace(/[\\/:*?"<>|]/g, '').replace(/\s+/g, '_')
   const parts = ['teletype', safeId]
   if (timestamp) parts.push(timestamp)
   return `${parts.join('_')}.${extension}`

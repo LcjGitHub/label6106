@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react'
 
 function extractSubject(body) {
-  const match = body.match(/SUBJ[::]\s*(.+?)(?:\r\n|\r|\n|$)/i)
+  const match = body.match(/SUBJ:+\s*(.+?)(?:\r\n|\r|\n|$)/i)
   return match ? match[1].trim() : ''
 }
 
@@ -22,8 +22,9 @@ function createIsInTimeRange() {
   return function isInTimeRange(timestamp, range) {
     if (range === 'all') return true
     const msgDate = new Date(timestamp.replace(' ', 'T'))
+    const msgDay = new Date(msgDate.getFullYear(), msgDate.getMonth(), msgDate.getDate())
     const today = getToday()
-    const diffTime = today.getTime() - msgDate.getTime()
+    const diffTime = today.getTime() - msgDay.getTime()
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
     switch (range) {
       case 'today':
@@ -95,7 +96,12 @@ export function useFilteredMessages({
     const start = performance.now()
     const result = filterByPriority(messages, priorityFilter)
     const duration = performance.now() - start
-    perfLogRef.current.push({ filter: 'priority', duration, count: result.length, timestamp: Date.now() })
+    perfLogRef.current.push({
+      filter: 'priority',
+      duration,
+      count: result.length,
+      timestamp: Date.now(),
+    })
     return result
   }, [messages, priorityFilter])
 
@@ -103,7 +109,12 @@ export function useFilteredMessages({
     const start = performance.now()
     const result = filterByTimeRange(priorityFiltered, timeRangeFilter)
     const duration = performance.now() - start
-    perfLogRef.current.push({ filter: 'timeRange', duration, count: result.length, timestamp: Date.now() })
+    perfLogRef.current.push({
+      filter: 'timeRange',
+      duration,
+      count: result.length,
+      timestamp: Date.now(),
+    })
     return result
   }, [priorityFiltered, timeRangeFilter])
 
@@ -111,7 +122,12 @@ export function useFilteredMessages({
     const start = performance.now()
     const result = filterByTags(timeFiltered, selectedTagIds)
     const duration = performance.now() - start
-    perfLogRef.current.push({ filter: 'tags', duration, count: result.length, timestamp: Date.now() })
+    perfLogRef.current.push({
+      filter: 'tags',
+      duration,
+      count: result.length,
+      timestamp: Date.now(),
+    })
     return result
   }, [timeFiltered, selectedTagIds])
 
@@ -119,7 +135,12 @@ export function useFilteredMessages({
     const start = performance.now()
     const result = filterByKeyword(tagFiltered, searchKeyword)
     const duration = performance.now() - start
-    perfLogRef.current.push({ filter: 'keyword', duration, count: result.length, timestamp: Date.now() })
+    perfLogRef.current.push({
+      filter: 'keyword',
+      duration,
+      count: result.length,
+      timestamp: Date.now(),
+    })
     return result
   }, [tagFiltered, searchKeyword])
 
@@ -127,7 +148,12 @@ export function useFilteredMessages({
     const start = performance.now()
     const result = filterByStar(keywordFiltered, starFilter, isStarred)
     const duration = performance.now() - start
-    perfLogRef.current.push({ filter: 'star', duration, count: result.length, timestamp: Date.now() })
+    perfLogRef.current.push({
+      filter: 'star',
+      duration,
+      count: result.length,
+      timestamp: Date.now(),
+    })
 
     const totalDuration = perfLogRef.current
       .filter((log) => log.timestamp >= Date.now() - 1000)

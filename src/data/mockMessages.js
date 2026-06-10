@@ -64,7 +64,9 @@ export function generateMockMessages(count = 30) {
       to,
       priority: PRIORITIES[i % PRIORITIES.length],
       timestamp: randomTime(i),
-      preview: body.replace(/\r\n/g, ' ').replace(/\r/g, ' ').replace(/\n/g, ' ').slice(0, 48).trim() + '…',
+      preview:
+        body.replace(/\r\n/g, ' ').replace(/\r/g, ' ').replace(/\n/g, ' ').slice(0, 48).trim() +
+        '…',
       body,
       tags: tagIds,
     }

@@ -33,9 +33,7 @@ export default function DraftPage({
       return editingName.trim() || editingContent.trim()
     }
     if (!selected) return false
-    return (
-      editingName !== originalName || editingContent !== originalContent
-    )
+    return editingName !== originalName || editingContent !== originalContent
   }, [isCreating, editingName, editingContent, selected, originalName, originalContent])
 
   useEffect(() => {
@@ -57,11 +55,14 @@ export default function DraftPage({
 
   const startCreate = () => {
     if (isDirty) {
-      setDirtyPrompt({ type: 'create', next: () => {
-        resetState()
-        setIsCreating(true)
-        setDirtyPrompt(null)
-      }})
+      setDirtyPrompt({
+        type: 'create',
+        next: () => {
+          resetState()
+          setIsCreating(true)
+          setDirtyPrompt(null)
+        },
+      })
       return
     }
     resetState()
@@ -296,12 +297,15 @@ export default function DraftPage({
                       <span className="draft-page__item-name">
                         {draft.name}
                         {selected?.id === draft.id && isDirty && (
-                          <span className="draft-page__dirty-dot" title="有未保存修改">●</span>
+                          <span className="draft-page__dirty-dot" title="有未保存修改">
+                            ●
+                          </span>
                         )}
                       </span>
                       <span className="draft-page__item-time">{draft.createdAt}</span>
                       <span className="draft-page__item-preview">
-                        {draft.content.slice(0, 40) + (draft.content.length > 40 ? '…' : '') || '(空草稿)'}
+                        {draft.content.slice(0, 40) + (draft.content.length > 40 ? '…' : '') ||
+                          '(空草稿)'}
                       </span>
                     </button>
                     <button
@@ -347,7 +351,8 @@ export default function DraftPage({
                         发送时间: {formatScheduledTime(task.scheduledAt)}
                       </span>
                       <span className="draft-page__item-preview">
-                        {task.content.slice(0, 40) + (task.content.length > 40 ? '…' : '') || '(空)'}
+                        {task.content.slice(0, 40) + (task.content.length > 40 ? '…' : '') ||
+                          '(空)'}
                       </span>
                     </button>
                     <button
@@ -376,7 +381,11 @@ export default function DraftPage({
                 确定要删除草稿「<strong>{deleteTarget.name}</strong>」吗？
               </p>
               <div className="draft-page__modal-actions">
-                <button type="button" className="draft-page__modal-btn--danger" onClick={handleDeleteConfirm}>
+                <button
+                  type="button"
+                  className="draft-page__modal-btn--danger"
+                  onClick={handleDeleteConfirm}
+                >
                   删除
                 </button>
                 <button type="button" onClick={handleDeleteCancel}>
@@ -390,16 +399,24 @@ export default function DraftPage({
         {dirtyPrompt && (
           <div className="draft-page__modal-mask">
             <div className="draft-page__modal">
-              <p className="draft-page__modal-text">
-                当前有未保存的修改，是否放弃？
-              </p>
+              <p className="draft-page__modal-text">当前有未保存的修改，是否放弃？</p>
               <div className="draft-page__modal-actions">
                 {dirtyPrompt.type === 'switch' && selected && (
-                  <button type="button" onClick={() => { handleSaveEdit(); setDirtyPrompt(null) }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleSaveEdit()
+                      setDirtyPrompt(null)
+                    }}
+                  >
                     保存并切换
                   </button>
                 )}
-                <button type="button" className="draft-page__modal-btn--danger" onClick={discardChanges}>
+                <button
+                  type="button"
+                  className="draft-page__modal-btn--danger"
+                  onClick={discardChanges}
+                >
                   放弃修改
                 </button>
                 <button type="button" onClick={cancelDirtyPrompt}>
@@ -417,7 +434,11 @@ export default function DraftPage({
                 确定要取消定时发送「<strong>{cancelTarget.name}</strong>」吗？
               </p>
               <div className="draft-page__modal-actions">
-                <button type="button" className="draft-page__modal-btn--danger" onClick={handleCancelScheduledConfirm}>
+                <button
+                  type="button"
+                  className="draft-page__modal-btn--danger"
+                  onClick={handleCancelScheduledConfirm}
+                >
                   取消发送
                 </button>
                 <button type="button" onClick={handleCancelScheduledCancel}>
@@ -438,7 +459,11 @@ export default function DraftPage({
               <div className="draft-page__detail-actions">
                 {isEditingSchedule ? (
                   <>
-                    <button type="button" onClick={handleSaveSchedule} disabled={!editingScheduleDate || !editingScheduleTime}>
+                    <button
+                      type="button"
+                      onClick={handleSaveSchedule}
+                      disabled={!editingScheduleDate || !editingScheduleTime}
+                    >
                       保存修改
                     </button>
                     <button type="button" onClick={cancelEditSchedule}>
@@ -458,16 +483,10 @@ export default function DraftPage({
               </div>
             </header>
             <div className="draft-page__form">
-              <label className="draft-page__label">
-                任务名称
-              </label>
-              <div className="draft-page__scheduled-name">
-                {selectedScheduled.name}
-              </div>
+              <label className="draft-page__label">任务名称</label>
+              <div className="draft-page__scheduled-name">{selectedScheduled.name}</div>
 
-              <label className="draft-page__label">
-                发送时间
-              </label>
+              <label className="draft-page__label">发送时间</label>
               {isEditingSchedule ? (
                 <div className="draft-page__schedule-edit-row">
                   <div className="draft-page__schedule-edit-group">
@@ -501,9 +520,7 @@ export default function DraftPage({
                 </div>
               )}
 
-              <label className="draft-page__label">
-                报文内容
-              </label>
+              <label className="draft-page__label">报文内容</label>
               <textarea
                 className="draft-page__textarea draft-page__textarea--readonly"
                 value={selectedScheduled.content}
@@ -520,9 +537,7 @@ export default function DraftPage({
         ) : activeTab === 'scheduled' ? (
           <div className="draft-page__empty">
             <p>← 选择一条定时任务</p>
-            <p className="draft-page__empty-hint">
-              在终端页面设置报文定时发送
-            </p>
+            <p className="draft-page__empty-hint">在终端页面设置报文定时发送</p>
           </div>
         ) : isCreating ? (
           <>
@@ -612,9 +627,7 @@ export default function DraftPage({
         ) : (
           <div className="draft-page__empty">
             <p>← 选择一条草稿</p>
-            <p className="draft-page__empty-hint">
-              点击上方「新建草稿」按钮创建新草稿
-            </p>
+            <p className="draft-page__empty-hint">点击上方「新建草稿」按钮创建新草稿</p>
           </div>
         )}
       </section>

@@ -45,8 +45,7 @@ function loadRecalledFromStorage() {
 function saveRecalledToStorage(data) {
   try {
     localStorage.setItem(RECALL_STORAGE_KEY, JSON.stringify(data))
-  } catch {
-  }
+  } catch {}
 }
 
 function loadStarredFromStorage() {
@@ -61,8 +60,7 @@ function loadStarredFromStorage() {
 function saveStarredToStorage(data) {
   try {
     localStorage.setItem(STAR_STORAGE_KEY, JSON.stringify(data))
-  } catch {
-  }
+  } catch {}
 }
 
 function parseTimestamp(timestamp) {
@@ -76,7 +74,7 @@ function parseTimestamp(timestamp) {
   }
 
   if (/^\d{4}\/\d{1,2}\/\d{1,2}/.test(t)) {
-    const parts = t.split(/[\s\/:]/)
+    const parts = t.split(/[\s/:]/)
     const year = parseInt(parts[0], 10)
     const month = parseInt(parts[1], 10) - 1
     const day = parseInt(parts[2], 10)
@@ -150,9 +148,7 @@ export default function HistoryPage({
 
   useEffect(() => {
     const stored = loadRecalledFromStorage()
-    const hasNew = messages.some(
-      (m) => m.recalled && !stored[m.id]
-    )
+    const hasNew = messages.some((m) => m.recalled && !stored[m.id])
     if (hasNew) {
       const updated = { ...stored }
       messages.forEach((m) => {
@@ -186,9 +182,12 @@ export default function HistoryPage({
     })
   }
 
-  const isStarred = useCallback((messageId) => {
-    return !!starred[messageId]
-  }, [starred])
+  const isStarred = useCallback(
+    (messageId) => {
+      return !!starred[messageId]
+    },
+    [starred]
+  )
 
   const handleToggleSelect = (messageId, e) => {
     if (e) {
@@ -205,7 +204,7 @@ export default function HistoryPage({
     })
   }
 
-  const { filteredMessages, getPerformanceLogs } = useFilteredMessages({
+  const { filteredMessages } = useFilteredMessages({
     messages,
     searchKeyword,
     priorityFilter,
@@ -234,7 +233,8 @@ export default function HistoryPage({
     return ids
   }, [filteredMessages, selectedIds])
 
-  const isAllSelected = filteredMessages.length > 0 && filteredMessages.every((m) => selectedIds.has(m.id))
+  const isAllSelected =
+    filteredMessages.length > 0 && filteredMessages.every((m) => selectedIds.has(m.id))
   const isPartialSelected = selectedIdsInFilter.size > 0 && !isAllSelected
 
   useEffect(() => {
@@ -428,7 +428,9 @@ export default function HistoryPage({
       <aside className="history-page__list-panel">
         <header className="history-page__list-header">
           <h2>报文历史</h2>
-          <span className="history-page__count">{filteredMessages.length} / {messages.length} 条</span>
+          <span className="history-page__count">
+            {filteredMessages.length} / {messages.length} 条
+          </span>
         </header>
         <div className="history-page__filters">
           <input
@@ -497,9 +499,7 @@ export default function HistoryPage({
               />
               <span>全选</span>
             </label>
-            <span className="history-page__batch-count">
-              已选 {selectedIdsInFilter.size} 条
-            </span>
+            <span className="history-page__batch-count">已选 {selectedIdsInFilter.size} 条</span>
             <button
               type="button"
               className="history-page__batch-delete-btn"
@@ -509,102 +509,104 @@ export default function HistoryPage({
             </button>
           </div>
         )}
-        {deleteToast && (
-          <div className="history-page__list-toast">
-            {deleteToast.msg}
-          </div>
-        )}
+        {deleteToast && <div className="history-page__list-toast">{deleteToast.msg}</div>}
         <ul className="history-page__list" role="list">
           {filteredMessages.length > 0 ? (
             filteredMessages.map((msg) => (
-            <li
-              key={msg.id}
-              className={`${msg.recalled ? 'history-page__list-item--recalled' : ''} ${selectedIds.has(msg.id) ? 'history-page__list-item--selected' : ''}`}
-            >
-              <label className="history-page__item-checkbox">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.has(msg.id)}
-                  onChange={(e) => handleToggleSelect(msg.id, e)}
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label={`选择报文 #${String(msg.index).padStart(3, '0')}`}
-                />
-                <span className="history-page__item-checkbox-label">
-                  选择报文 #{String(msg.index).padStart(3, '0')}
-                </span>
-              </label>
-              <button
-                type="button"
-                className={`history-page__item ${selected?.id === msg.id ? 'history-page__item--active' : ''} ${msg.recalled ? 'history-page__item--recalled' : ''}`}
-                onClick={() => openMessage(msg)}
+              <li
+                key={msg.id}
+                className={`${msg.recalled ? 'history-page__list-item--recalled' : ''} ${selectedIds.has(msg.id) ? 'history-page__list-item--selected' : ''}`}
               >
-                <span className="history-page__item-top">
-                  <span className="history-page__item-id">
-                    {isStarred(msg.id) && (
-                      <span className="history-page__star-icon history-page__star-icon--active" title="已收藏">
-                        ★
-                      </span>
-                    )}
-                    #{String(msg.index).padStart(3, '0')}
+                <label className="history-page__item-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(msg.id)}
+                    onChange={(e) => handleToggleSelect(msg.id, e)}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`选择报文 #${String(msg.index).padStart(3, '0')}`}
+                  />
+                  <span className="history-page__item-checkbox-label">
+                    选择报文 #{String(msg.index).padStart(3, '0')}
                   </span>
-                  <span className="history-page__item-top-right">
-                    {msg.recalled && (
-                      <span className="history-page__recall-badge">已撤回</span>
-                    )}
-                    <span className={`history-page__priority ${PRIORITY_CLASS[msg.priority] ?? ''}`}>
-                      {msg.priority}
+                </label>
+                <button
+                  type="button"
+                  className={`history-page__item ${selected?.id === msg.id ? 'history-page__item--active' : ''} ${msg.recalled ? 'history-page__item--recalled' : ''}`}
+                  onClick={() => openMessage(msg)}
+                >
+                  <span className="history-page__item-top">
+                    <span className="history-page__item-id">
+                      {isStarred(msg.id) && (
+                        <span
+                          className="history-page__star-icon history-page__star-icon--active"
+                          title="已收藏"
+                        >
+                          ★
+                        </span>
+                      )}
+                      #{String(msg.index).padStart(3, '0')}
+                    </span>
+                    <span className="history-page__item-top-right">
+                      {msg.recalled && <span className="history-page__recall-badge">已撤回</span>}
+                      <span
+                        className={`history-page__priority ${PRIORITY_CLASS[msg.priority] ?? ''}`}
+                      >
+                        {msg.priority}
+                      </span>
                     </span>
                   </span>
-                </span>
-                <span className="history-page__item-route">
-                  {msg.from} → {msg.to}
-                </span>
-                <span className="history-page__item-time">{msg.timestamp}</span>
-                {msg.recalled && msg.recalledAt && (
-                  <span className="history-page__item-recall-time">
-                    撤回于 {formatRecallTime(msg.recalledAt)}
+                  <span className="history-page__item-route">
+                    {msg.from} → {msg.to}
                   </span>
-                )}
-                {msg.tags && msg.tags.length > 0 && (
-                  <span className="history-page__item-tags">
-                    {msg.tags.map((tagId) => {
-                      const tag = getTagById(tagId)
-                      if (!tag) return null
-                      return (
-                        <span
-                          key={tagId}
-                          className="history-page__item-tag"
-                          style={{ background: tag.color, color: '#fff' }}
-                        >
-                          {tag.name}
-                        </span>
-                      )
-                    })}
-                  </span>
-                )}
-                <span className="history-page__item-preview">
-                  {msg.attachments && msg.attachments.length > 0 && (
-                    <span className="history-page__item-attachment-indicator" title={`包含 ${msg.attachments.length} 个附件`}>
-                      📎{msg.attachments.length}
+                  <span className="history-page__item-time">{msg.timestamp}</span>
+                  {msg.recalled && msg.recalledAt && (
+                    <span className="history-page__item-recall-time">
+                      撤回于 {formatRecallTime(msg.recalledAt)}
                     </span>
                   )}
-                  {msg.preview}
-                </span>
-                {isWithinRecallWindow(msg) && (
-                  <span className="history-page__item-actions">
-                    <button
-                      type="button"
-                      className="history-page__recall-btn"
-                      onClick={(e) => handleRequestRecall(msg, e)}
-                      title="撤回此报文"
-                    >
-                      撤回
-                    </button>
+                  {msg.tags && msg.tags.length > 0 && (
+                    <span className="history-page__item-tags">
+                      {msg.tags.map((tagId) => {
+                        const tag = getTagById(tagId)
+                        if (!tag) return null
+                        return (
+                          <span
+                            key={tagId}
+                            className="history-page__item-tag"
+                            style={{ background: tag.color, color: '#fff' }}
+                          >
+                            {tag.name}
+                          </span>
+                        )
+                      })}
+                    </span>
+                  )}
+                  <span className="history-page__item-preview">
+                    {msg.attachments && msg.attachments.length > 0 && (
+                      <span
+                        className="history-page__item-attachment-indicator"
+                        title={`包含 ${msg.attachments.length} 个附件`}
+                      >
+                        📎{msg.attachments.length}
+                      </span>
+                    )}
+                    {msg.preview}
                   </span>
-                )}
-              </button>
-            </li>
-          ))
+                  {isWithinRecallWindow(msg) && (
+                    <span className="history-page__item-actions">
+                      <button
+                        type="button"
+                        className="history-page__recall-btn"
+                        onClick={(e) => handleRequestRecall(msg, e)}
+                        title="撤回此报文"
+                      >
+                        撤回
+                      </button>
+                    </span>
+                  )}
+                </button>
+              </li>
+            ))
           ) : (
             <li className="history-page__no-results">
               <p>未找到匹配的报文</p>
@@ -622,14 +624,20 @@ export default function HistoryPage({
               <p className="history-page__modal-message">
                 您确定要撤回报文 #{String(confirmRecall.index).padStart(3, '0')} 吗？
               </p>
-              <p className="history-page__modal-hint">
-                撤回后报文内容将被清空，此操作不可撤销。
-              </p>
+              <p className="history-page__modal-hint">撤回后报文内容将被清空，此操作不可撤销。</p>
               <div className="history-page__modal-actions">
-                <button type="button" className="history-page__modal-btn--cancel" onClick={handleCancelRecall}>
+                <button
+                  type="button"
+                  className="history-page__modal-btn--cancel"
+                  onClick={handleCancelRecall}
+                >
                   取消
                 </button>
-                <button type="button" className="history-page__modal-btn--confirm" onClick={handleConfirmRecall}>
+                <button
+                  type="button"
+                  className="history-page__modal-btn--confirm"
+                  onClick={handleConfirmRecall}
+                >
                   确认撤回
                 </button>
               </div>
@@ -643,14 +651,20 @@ export default function HistoryPage({
               <p className="history-page__modal-message">
                 您确定要删除选中的 {selectedIdsInFilter.size} 条报文吗？
               </p>
-              <p className="history-page__modal-hint">
-                删除后报文将无法恢复，请谨慎操作。
-              </p>
+              <p className="history-page__modal-hint">删除后报文将无法恢复，请谨慎操作。</p>
               <div className="history-page__modal-actions">
-                <button type="button" className="history-page__modal-btn--cancel" onClick={handleCancelBatchDelete}>
+                <button
+                  type="button"
+                  className="history-page__modal-btn--cancel"
+                  onClick={handleCancelBatchDelete}
+                >
                   取消
                 </button>
-                <button type="button" className="history-page__modal-btn--confirm" onClick={handleConfirmBatchDelete}>
+                <button
+                  type="button"
+                  className="history-page__modal-btn--confirm"
+                  onClick={handleConfirmBatchDelete}
+                >
                   确认删除
                 </button>
               </div>
@@ -679,7 +693,9 @@ export default function HistoryPage({
                   </button>
                   报文 #{String(selected.index).padStart(3, '0')}
                   {selected.recalled && (
-                    <span className="history-page__recall-badge history-page__recall-badge--large">已撤回</span>
+                    <span className="history-page__recall-badge history-page__recall-badge--large">
+                      已撤回
+                    </span>
                   )}
                 </h3>
                 <p className="history-page__meta">
@@ -775,11 +791,7 @@ export default function HistoryPage({
                   关闭
                 </button>
               </div>
-              {exportToast && (
-                <div className="history-page__toast">
-                  {exportToast.msg}
-                </div>
-              )}
+              {exportToast && <div className="history-page__toast">{exportToast.msg}</div>}
             </header>
             {selected.recalled ? (
               <div className="history-page__recalled-viewer">
