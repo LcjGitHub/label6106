@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import './DraftPage.css'
 
 export default function DraftPage({
@@ -6,18 +6,67 @@ export default function DraftPage({
   onAddDraft,
   onUpdateDraft,
   onDeleteDraft,
-  onSwitchToTerminal,
+  onRestoreToTerminal,
 }) {
   const [selected, setSelected] = useState(null)
   const [editingName, setEditingName] = useState('')
   const [editingContent, setEditingContent] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [dirtyPrompt, setDirtyPrompt] = useState(null)
+  const [toast, setToast] = useState(null)
 
-  const startCreate = () => {
-    setIsCreating(true)
+  const originalName = selected?.name ?? ''
+  const originalContent = selected?.content ?? ''
+
+  const isDirty = useMemo(() => {
+    if (isCreating) {
+      return editingName.trim() || editingContent.trim()
+    }
+    if (!selected) return false
+    return (
+      editingName !== originalName || editingContent !== originalContent
+    )
+  }, [isCreating, editingName, editingContent, selected, originalName, originalContent])
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 2000)
+    return () => clearTimeout(timer)
+  }, [toast])
+
+  const showToastMsg = (msg) => {
+    setToast(msg)
+  }
+
+  const resetState = () => {
     setSelected(null)
     setEditingName('')
     setEditingContent('')
+    setIsCreating(false)
+  }
+
+  const startCreate = () => {
+    if (isDirty) {
+      setDirtyPrompt({ type: 'create', next: () => {
+        resetState()
+        setIsCreating(true)
+        setDirtyPrompt(null)
+      }})
+      return
+    }
+    resetState()
+    setIsCreating(true)
+  }
+
+  const discardChanges = () => {
+    if (dirtyPrompt?.next) {
+      dirtyPrompt.next()
+    }
+  }
+
+  const cancelDirtyPrompt = () => {
+    setDirtyPrompt(null)
   }
 
   const handleCreate = () => {
@@ -26,18 +75,33 @@ export default function DraftPage({
       name: editingName.trim(),
       content: editingContent,
     })
-    setIsCreating(false)
-    setEditingName('')
-    setEditingContent('')
+    showToastMsg('草稿已创建')
+    resetState()
   }
 
   const handleCancelCreate = () => {
-    setIsCreating(false)
-    setEditingName('')
-    setEditingContent('')
+    if (editingName.trim() || editingContent.trim()) {
+      setDirtyPrompt({ type: 'cancel-create', next: resetState })
+      return
+    }
+    resetState()
   }
 
   const openDraft = (draft) => {
+    if (selected?.id === draft.id) return
+    if (isDirty) {
+      setDirtyPrompt({
+        type: 'switch',
+        next: () => {
+          setIsCreating(false)
+          setSelected(draft)
+          setEditingName(draft.name)
+          setEditingContent(draft.content)
+          setDirtyPrompt(null)
+        },
+      })
+      return
+    }
     setIsCreating(false)
     setSelected(draft)
     setEditingName(draft.name)
@@ -55,24 +119,41 @@ export default function DraftPage({
       name: editingName.trim() || selected.name,
       content: editingContent,
     })
+    showToastMsg('修改已保存')
   }
 
-  const handleDelete = (draft) => {
-    if (window.confirm(`确定要删除草稿「${draft.name}」吗？`)) {
-      onDeleteDraft(draft.id)
-      if (selected?.id === draft.id) {
-        setSelected(null)
-        setEditingName('')
-        setEditingContent('')
-      }
+  const confirmDelete = (draft) => {
+    setDeleteTarget(draft)
+  }
+
+  const handleDeleteConfirm = () => {
+    if (!deleteTarget) return
+    onDeleteDraft(deleteTarget.id)
+    if (selected?.id === deleteTarget.id) {
+      resetState()
     }
+    showToastMsg('草稿已删除')
+    setDeleteTarget(null)
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteTarget(null)
   }
 
   const handleRestore = () => {
     if (!selected) return
     const content = editingContent || selected.content
-    sessionStorage.setItem('restored-draft', content)
-    onSwitchToTerminal()
+    if (isDirty) {
+      setDirtyPrompt({
+        type: 'restore',
+        next: () => {
+          onRestoreToTerminal?.(content)
+          setDirtyPrompt(null)
+        },
+      })
+      return
+    }
+    onRestoreToTerminal?.(content)
   }
 
   return (
@@ -98,7 +179,12 @@ export default function DraftPage({
                   className="draft-page__item-main"
                   onClick={() => openDraft(draft)}
                 >
-                  <span className="draft-page__item-name">{draft.name}</span>
+                  <span className="draft-page__item-name">
+                    {draft.name}
+                    {selected?.id === draft.id && isDirty && (
+                      <span className="draft-page__dirty-dot" title="有未保存修改">●</span>
+                    )}
+                  </span>
                   <span className="draft-page__item-time">{draft.createdAt}</span>
                   <span className="draft-page__item-preview">
                     {draft.content.slice(0, 40) + (draft.content.length > 40 ? '…' : '') || '(空草稿)'}
@@ -107,7 +193,7 @@ export default function DraftPage({
                 <button
                   type="button"
                   className="draft-page__item-delete"
-                  onClick={() => handleDelete(draft)}
+                  onClick={() => confirmDelete(draft)}
                   aria-label="删除草稿"
                 >
                   ×
@@ -119,6 +205,49 @@ export default function DraftPage({
       </aside>
 
       <section className="draft-page__detail">
+        {toast && <div className="draft-page__toast">{toast}</div>}
+
+        {deleteTarget && (
+          <div className="draft-page__modal-mask">
+            <div className="draft-page__modal">
+              <p className="draft-page__modal-text">
+                确定要删除草稿「<strong>{deleteTarget.name}</strong>」吗？
+              </p>
+              <div className="draft-page__modal-actions">
+                <button type="button" className="draft-page__modal-btn--danger" onClick={handleDeleteConfirm}>
+                  删除
+                </button>
+                <button type="button" onClick={handleDeleteCancel}>
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {dirtyPrompt && (
+          <div className="draft-page__modal-mask">
+            <div className="draft-page__modal">
+              <p className="draft-page__modal-text">
+                当前有未保存的修改，是否放弃？
+              </p>
+              <div className="draft-page__modal-actions">
+                {dirtyPrompt.type === 'switch' && selected && (
+                  <button type="button" onClick={() => { handleSaveEdit(); setDirtyPrompt(null) }}>
+                    保存并切换
+                  </button>
+                )}
+                <button type="button" className="draft-page__modal-btn--danger" onClick={discardChanges}>
+                  放弃修改
+                </button>
+                <button type="button" onClick={cancelDirtyPrompt}>
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {isCreating ? (
           <>
             <header className="draft-page__detail-header">
@@ -164,15 +293,18 @@ export default function DraftPage({
         ) : selected ? (
           <>
             <header className="draft-page__detail-header">
-              <h3>编辑草稿</h3>
+              <h3>
+                编辑草稿
+                {isDirty && <span className="draft-page__dirty-badge">（未保存）</span>}
+              </h3>
               <div className="draft-page__detail-actions">
-                <button type="button" onClick={handleSaveEdit}>
+                <button type="button" onClick={handleSaveEdit} disabled={!isDirty}>
                   保存修改
                 </button>
                 <button type="button" onClick={handleRestore}>
                   恢复到终端
                 </button>
-                <button type="button" onClick={() => handleDelete(selected)}>
+                <button type="button" onClick={() => confirmDelete(selected)}>
                   删除
                 </button>
               </div>

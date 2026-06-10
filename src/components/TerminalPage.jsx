@@ -7,25 +7,38 @@ import './TerminalPage.css'
 const WELCOME =
   '电传打字机终端 v1.0 就绪\r\n输入报文后按 Enter 发送，或使用下方快捷操作\r\n---\r\n'
 
-export default function TerminalPage({ soundEnabled, onSendToHistory, onSaveDraft, drafts }) {
+export default function TerminalPage({
+  soundEnabled,
+  onSendToHistory,
+  onSaveDraft,
+  onOverwriteDraft,
+  onFindDraftByName,
+  drafts,
+  restoredContent,
+  onClearRestored,
+}) {
   const [input, setInput] = useState('')
   const [outputLog, setOutputLog] = useState(WELCOME)
   const [incoming, setIncoming] = useState('')
   const [isPrinting, setIsPrinting] = useState(false)
   const [showDraftMenu, setShowDraftMenu] = useState(false)
+  const [showSaveDraftPanel, setShowSaveDraftPanel] = useState(false)
+  const [draftNameInput, setDraftNameInput] = useState('')
+  const [toast, setToast] = useState(null)
+  const [overwriteCandidate, setOverwriteCandidate] = useState(null)
   const inputRef = useRef(null)
   const flushedRef = useRef('')
   const draftMenuRef = useRef(null)
+  const savePanelRef = useRef(null)
   const { playClick, playBell } = useTypewriterSound(soundEnabled)
 
   useEffect(() => {
-    const restored = sessionStorage.getItem('restored-draft')
-    if (restored) {
-      setInput(restored)
-      sessionStorage.removeItem('restored-draft')
+    if (restoredContent != null) {
+      setInput(restoredContent)
+      onClearRestored?.()
       inputRef.current?.focus()
     }
-  }, [])
+  }, [restoredContent, onClearRestored])
 
   useEffect(() => {
     if (!showDraftMenu) return
@@ -37,6 +50,28 @@ export default function TerminalPage({ soundEnabled, onSendToHistory, onSaveDraf
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showDraftMenu])
+
+  useEffect(() => {
+    if (!showSaveDraftPanel) return
+    const handleClickOutside = (e) => {
+      if (savePanelRef.current && !savePanelRef.current.contains(e.target)) {
+        setShowSaveDraftPanel(false)
+        setOverwriteCandidate(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showSaveDraftPanel])
+
+  useEffect(() => {
+    if (!toast) return
+    const timer = setTimeout(() => setToast(null), 2000)
+    return () => clearTimeout(timer)
+  }, [toast])
+
+  const showToastMsg = (msg, type = 'success') => {
+    setToast({ msg, type })
+  }
 
   const appendOutput = useCallback((chunk) => {
     setOutputLog((prev) => prev + chunk)
@@ -103,15 +138,46 @@ export default function TerminalPage({ soundEnabled, onSendToHistory, onSaveDraf
     }
   }
 
-  const handleSaveDraft = () => {
+  const openSaveDraftPanel = () => {
     const trimmed = input.trim()
     if (!trimmed) return
-    const name = window.prompt('请输入草稿名称（可选）：', trimmed.slice(0, 20))
-    if (name === null) return
-    onSaveDraft?.({
-      name: name.trim(),
-      content: input,
-    })
+    setDraftNameInput(trimmed.slice(0, 20))
+    setOverwriteCandidate(null)
+    setShowSaveDraftPanel(true)
+  }
+
+  const closeSaveDraftPanel = () => {
+    setShowSaveDraftPanel(false)
+    setOverwriteCandidate(null)
+    setDraftNameInput('')
+  }
+
+  const handleConfirmSaveDraft = () => {
+    const name = draftNameInput.trim()
+    const content = input
+    if (!name && !content.trim()) return
+
+    const existing = onFindDraftByName?.(name)
+    if (existing && existing.content !== content) {
+      setOverwriteCandidate(existing)
+      return
+    }
+
+    if (existing) {
+      onOverwriteDraft?.(existing.id, content)
+      showToastMsg(`已更新草稿「${name}」`)
+    } else {
+      onSaveDraft?.({ name, content })
+      showToastMsg(`草稿「${name || '未命名'}」已保存`)
+    }
+    closeSaveDraftPanel()
+  }
+
+  const handleOverwriteConfirm = () => {
+    if (!overwriteCandidate) return
+    onOverwriteDraft?.(overwriteCandidate.id, input)
+    showToastMsg(`已覆盖草稿「${overwriteCandidate.name}」`)
+    closeSaveDraftPanel()
   }
 
   const handleRestoreDraft = (draft) => {
@@ -146,6 +212,11 @@ export default function TerminalPage({ soundEnabled, onSendToHistory, onSaveDraf
             跳过动画
           </button>
         )}
+        {toast && (
+          <div className={`terminal-page__toast terminal-page__toast--${toast.type}`}>
+            {toast.msg}
+          </div>
+        )}
       </div>
 
       <div className="terminal-page__input-area">
@@ -170,7 +241,7 @@ export default function TerminalPage({ soundEnabled, onSendToHistory, onSaveDraf
           </button>
           <button
             type="button"
-            onClick={handleSaveDraft}
+            onClick={openSaveDraftPanel}
             disabled={isPrinting || !input.trim()}
           >
             保存草稿
@@ -221,6 +292,64 @@ export default function TerminalPage({ soundEnabled, onSendToHistory, onSaveDraf
             清屏
           </button>
         </div>
+
+        {showSaveDraftPanel && (
+          <div className="terminal-page__save-panel" ref={savePanelRef}>
+            {overwriteCandidate ? (
+              <>
+                <p className="terminal-page__save-confirm">
+                  草稿「<strong>{overwriteCandidate.name}</strong>」已存在，是否覆盖？
+                </p>
+                <div className="terminal-page__save-actions">
+                  <button type="button" onClick={handleOverwriteConfirm}>
+                    覆盖
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOverwriteCandidate(null)}
+                  >
+                    改名保存
+                  </button>
+                  <button type="button" onClick={closeSaveDraftPanel}>
+                    取消
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <label className="terminal-page__save-label" htmlFor="terminal-draft-name">
+                  草稿名称
+                </label>
+                <div className="terminal-page__save-row">
+                  <input
+                    id="terminal-draft-name"
+                    type="text"
+                    className="terminal-page__save-input"
+                    value={draftNameInput}
+                    onChange={(e) => setDraftNameInput(e.target.value)}
+                    placeholder="输入草稿名称（可选）"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        handleConfirmSaveDraft()
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleConfirmSaveDraft}
+                    disabled={!draftNameInput.trim() && !input.trim()}
+                  >
+                    保存
+                  </button>
+                  <button type="button" onClick={closeSaveDraftPanel}>
+                    取消
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

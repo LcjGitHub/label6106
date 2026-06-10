@@ -16,6 +16,7 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(false)
   const [messages, setMessages] = useState(MOCK_MESSAGES)
   const [drafts, setDrafts] = useState([])
+  const [restoredDraftContent, setRestoredDraftContent] = useState(null)
 
   const handleSendToHistory = (msg) => {
     setMessages((prev) => [
@@ -28,15 +29,28 @@ export default function App() {
   }
 
   const addDraft = (draft) => {
-    setDrafts((prev) => [
-      {
-        id: `draft-${Date.now()}`,
-        name: draft.name || `草稿 ${prev.length + 1}`,
-        content: draft.content || '',
-        createdAt: new Date().toLocaleString('zh-CN'),
-      },
-      ...prev,
-    ])
+    const newDraft = {
+      id: `draft-${Date.now()}`,
+      name: draft.name || `草稿 ${drafts.length + 1}`,
+      content: draft.content || '',
+      createdAt: new Date().toLocaleString('zh-CN'),
+    }
+    setDrafts((prev) => [newDraft, ...prev])
+    return newDraft
+  }
+
+  const findDraftByName = (name) => {
+    return drafts.find((d) => d.name === name)
+  }
+
+  const overwriteDraft = (id, content) => {
+    setDrafts((prev) =>
+      prev.map((d) =>
+        d.id === id
+          ? { ...d, content, updatedAt: new Date().toLocaleString('zh-CN') }
+          : d
+      )
+    )
   }
 
   const updateDraft = (id, updates) => {
@@ -47,6 +61,15 @@ export default function App() {
 
   const deleteDraft = (id) => {
     setDrafts((prev) => prev.filter((d) => d.id !== id))
+  }
+
+  const restoreDraftToTerminal = (content) => {
+    setRestoredDraftContent(content)
+    setTab('terminal')
+  }
+
+  const clearRestoredDraft = () => {
+    setRestoredDraftContent(null)
   }
 
   return (
@@ -89,7 +112,11 @@ export default function App() {
             soundEnabled={soundEnabled}
             onSendToHistory={handleSendToHistory}
             onSaveDraft={addDraft}
+            onOverwriteDraft={overwriteDraft}
+            onFindDraftByName={findDraftByName}
             drafts={drafts}
+            restoredContent={restoredDraftContent}
+            onClearRestored={clearRestoredDraft}
           />
         )}
         {tab === 'drafts' && (
@@ -98,7 +125,7 @@ export default function App() {
             onAddDraft={addDraft}
             onUpdateDraft={updateDraft}
             onDeleteDraft={deleteDraft}
-            onSwitchToTerminal={() => setTab('terminal')}
+            onRestoreToTerminal={restoreDraftToTerminal}
           />
         )}
         {tab === 'history' && (

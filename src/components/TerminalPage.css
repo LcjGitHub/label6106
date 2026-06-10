@@ -132,3 +132,107 @@
   font-size: 0.68rem;
   opacity: 0.7;
 }
+
+.terminal-page__toast {
+  position: absolute;
+  top: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.4rem 0.9rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  background: var(--panel-bg);
+  border: 2px outset var(--bezel-light);
+  color: var(--phosphor);
+  z-index: 20;
+  animation: toast-fade-in 0.2s ease-out;
+}
+
+.terminal-page__toast--success {
+  color: #9cc26a;
+}
+
+.terminal-page__toast--warning {
+  color: #e0a030;
+}
+
+@keyframes toast-fade-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-0.3rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.terminal-page__save-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0.85rem;
+  background: var(--panel-bg);
+  border: 2px inset var(--bezel-dark);
+}
+
+.terminal-page__save-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--label-muted);
+}
+
+.terminal-page__save-row {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.terminal-page__save-input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--phosphor);
+  background: var(--screen-bg);
+  border: 2px inset var(--bezel-dark);
+  outline: none;
+}
+
+.terminal-page__save-input::placeholder {
+  color: var(--phosphor-dim);
+}
+
+.terminal-page__save-input:focus {
+  border-color: var(--phosphor-dim);
+}
+
+.terminal-page__save-row button {
+  padding: 0.35rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
+
+.terminal-page__save-confirm {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--phosphor);
+}
+
+.terminal-page__save-confirm strong {
+  color: var(--phosphor);
+  font-weight: 600;
+}
+
+.terminal-page__save-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.terminal-page__save-actions button {
+  padding: 0.35rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+}
