@@ -263,3 +263,82 @@
   font-family: var(--font-mono);
   font-size: 0.78rem;
 }
+
+.terminal-page__schedule-btn {
+  color: var(--phosphor-dim);
+}
+
+.terminal-page__schedule-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--panel-bg);
+  border: 2px inset var(--bezel-dark);
+}
+
+.terminal-page__schedule-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--label-muted);
+}
+
+.terminal-page__schedule-row {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.terminal-page__schedule-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 140px;
+}
+
+.terminal-page__schedule-input-label {
+  font-size: 0.7rem;
+  color: var(--label-muted);
+  font-family: var(--font-mono);
+}
+
+.terminal-page__schedule-input {
+  padding: 0.4rem 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--phosphor);
+  background: var(--screen-bg);
+  border: 2px inset var(--bezel-dark);
+  outline: none;
+}
+
+.terminal-page__schedule-input:focus {
+  border-color: var(--phosphor-dim);
+}
+
+.terminal-page__schedule-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.terminal-page__schedule-actions button {
+  padding: 0.4rem 0.8rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.terminal-page__schedule-actions button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.terminal-page__schedule-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--label-muted);
+  font-family: var(--font-mono);
+}

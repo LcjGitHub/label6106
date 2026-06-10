@@ -17,6 +17,7 @@ export default function TerminalPage({
   drafts,
   restoredContent,
   onClearRestored,
+  onAddScheduledTask,
 }) {
   const [input, setInput] = useState('')
   const [outputLog, setOutputLog] = useState(WELCOME)
@@ -28,10 +29,14 @@ export default function TerminalPage({
   const [toast, setToast] = useState(null)
   const [overwriteCandidate, setOverwriteCandidate] = useState(null)
   const [notificationPermission, setNotificationPermission] = useState(NotificationManager.getPermission())
+  const [showSchedulePanel, setShowSchedulePanel] = useState(false)
+  const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduleTime, setScheduleTime] = useState('')
   const inputRef = useRef(null)
   const flushedRef = useRef('')
   const draftMenuRef = useRef(null)
   const savePanelRef = useRef(null)
+  const schedulePanelRef = useRef(null)
   const { playClick, playBell } = useTypewriterSound(soundEnabled)
 
   useEffect(() => {
@@ -64,6 +69,17 @@ export default function TerminalPage({
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showSaveDraftPanel])
+
+  useEffect(() => {
+    if (!showSchedulePanel) return
+    const handleClickOutside = (e) => {
+      if (schedulePanelRef.current && !schedulePanelRef.current.contains(e.target)) {
+        setShowSchedulePanel(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showSchedulePanel])
 
   useEffect(() => {
     if (!toast) return
@@ -201,6 +217,52 @@ export default function TerminalPage({
     closeSaveDraftPanel()
   }
 
+  const openSchedulePanel = () => {
+    const trimmed = input.trim()
+    if (!trimmed) return
+    const now = new Date()
+    now.setMinutes(now.getMinutes() + 1)
+    const dateStr = now.toISOString().split('T')[0]
+    const timeStr = now.toTimeString().slice(0, 5)
+    setScheduleDate(dateStr)
+    setScheduleTime(timeStr)
+    setShowSchedulePanel(true)
+  }
+
+  const closeSchedulePanel = () => {
+    setShowSchedulePanel(false)
+    setScheduleDate('')
+    setScheduleTime('')
+  }
+
+  const handleConfirmSchedule = () => {
+    const trimmed = input.trim()
+    if (!trimmed || !scheduleDate || !scheduleTime) return
+
+    const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`)
+    const scheduledAt = scheduledDateTime.getTime()
+    const now = Date.now()
+
+    if (scheduledAt <= now) {
+      showToastMsg('发送时间必须晚于当前时间', 'error')
+      return
+    }
+
+    const result = onAddScheduledTask?.({
+      name: trimmed.slice(0, 20) || '定时报文',
+      content: input,
+      scheduledAt,
+    })
+
+    if (result?.success) {
+      showToastMsg(`定时发送已设置，将于 ${scheduledDateTime.toLocaleString('zh-CN')} 发送`)
+      setInput('')
+      closeSchedulePanel()
+    } else if (result?.error) {
+      showToastMsg(result.error, 'error')
+    }
+  }
+
   const handleRestoreDraft = (draft) => {
     setInput(draft.content)
     setShowDraftMenu(false)
@@ -266,6 +328,14 @@ export default function TerminalPage({
             disabled={isPrinting || !input.trim()}
           >
             保存草稿
+          </button>
+          <button
+            type="button"
+            onClick={openSchedulePanel}
+            disabled={isPrinting || !input.trim()}
+            className="terminal-page__schedule-btn"
+          >
+            定时发送
           </button>
           <div className="terminal-page__draft-menu" ref={draftMenuRef}>
             <button
@@ -381,6 +451,55 @@ export default function TerminalPage({
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {showSchedulePanel && (
+          <div className="terminal-page__schedule-panel" ref={schedulePanelRef}>
+            <label className="terminal-page__schedule-label">
+              选择发送时间
+            </label>
+            <div className="terminal-page__schedule-row">
+              <div className="terminal-page__schedule-input-group">
+                <label className="terminal-page__schedule-input-label" htmlFor="schedule-date">
+                  日期
+                </label>
+                <input
+                  id="schedule-date"
+                  type="date"
+                  className="terminal-page__schedule-input"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                />
+              </div>
+              <div className="terminal-page__schedule-input-group">
+                <label className="terminal-page__schedule-input-label" htmlFor="schedule-time">
+                  时间
+                </label>
+                <input
+                  id="schedule-time"
+                  type="time"
+                  className="terminal-page__schedule-input"
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="terminal-page__schedule-actions">
+              <button
+                type="button"
+                onClick={handleConfirmSchedule}
+                disabled={!scheduleDate || !scheduleTime}
+              >
+                确认定时
+              </button>
+              <button type="button" onClick={closeSchedulePanel}>
+                取消
+              </button>
+            </div>
+            <p className="terminal-page__schedule-hint">
+              到达设定时间后，报文将自动发送到历史记录
+            </p>
           </div>
         )}
       </div>

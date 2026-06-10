@@ -354,3 +354,119 @@
     grid-template-rows: 40% 1fr;
   }
 }
+
+.draft-page__tabs {
+  display: flex;
+  border-bottom: 1px solid var(--bezel-dark);
+}
+
+.draft-page__tab {
+  flex: 1;
+  padding: 0.6rem 0.8rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--label-muted);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.draft-page__tab:hover {
+  color: var(--phosphor-dim);
+  background: rgba(255, 176, 0, 0.04);
+}
+
+.draft-page__tab--active {
+  color: var(--phosphor);
+  border-bottom-color: var(--phosphor);
+  background: rgba(255, 176, 0, 0.08);
+}
+
+.draft-page__item--scheduled {
+  border-left: 3px solid #e0a030;
+}
+
+.draft-page__scheduled-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.65rem;
+  font-weight: normal;
+  color: #e0a030;
+  background: rgba(224, 160, 48, 0.12);
+  border: 1px solid rgba(224, 160, 48, 0.3);
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.draft-page__scheduled-badge-large {
+  display: inline-block;
+  margin-left: 0.6rem;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: normal;
+  color: #e0a030;
+  background: rgba(224, 160, 48, 0.12);
+  border: 1px solid rgba(224, 160, 48, 0.3);
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.draft-page__list-hint {
+  font-size: 0.72rem;
+  color: var(--label-muted);
+  font-family: var(--font-mono);
+}
+
+.draft-page__scheduled-name {
+  padding: 0.5rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--phosphor);
+  background: var(--screen-bg);
+  border: 2px inset var(--bezel-dark);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.3);
+}
+
+.draft-page__scheduled-time {
+  padding: 0.5rem 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: #e0a030;
+  background: var(--screen-bg);
+  border: 2px inset var(--bezel-dark);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.3);
+  font-weight: 600;
+}
+
+.draft-page__schedule-edit-row {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.draft-page__schedule-edit-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 140px;
+}
+
+.draft-page__schedule-edit-label {
+  font-size: 0.7rem;
+  color: var(--label-muted);
+  font-family: var(--font-mono);
+}
+
+.draft-page__textarea--readonly {
+  opacity: 0.9;
+  cursor: default;
+}
+
+.draft-page__item-time {
+  font-size: 0.68rem;
+  opacity: 0.75;
+}

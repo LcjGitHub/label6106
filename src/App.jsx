@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import TerminalPage from './components/TerminalPage'
 import HistoryPage from './components/HistoryPage'
 import DraftPage from './components/DraftPage'
@@ -6,6 +6,7 @@ import { MOCK_MESSAGES, DEFAULT_TAGS } from './data/mockMessages'
 import './App.css'
 
 const RECALL_STORAGE_KEY = 'telex_recalled_messages'
+const SCHEDULED_STORAGE_KEY = 'telex_scheduled_tasks'
 
 function loadRecalledFromStorage() {
   try {
@@ -32,6 +33,25 @@ function mergeRecalledMessages(messages) {
   })
 }
 
+function loadScheduledFromStorage() {
+  try {
+    const raw = localStorage.getItem(SCHEDULED_STORAGE_KEY)
+    if (!raw) return []
+    const tasks = JSON.parse(raw)
+    const now = Date.now()
+    return tasks.filter((t) => t.scheduledAt > now)
+  } catch {
+    return []
+  }
+}
+
+function saveScheduledToStorage(tasks) {
+  try {
+    localStorage.setItem(SCHEDULED_STORAGE_KEY, JSON.stringify(tasks))
+  } catch {
+  }
+}
+
 const TAG_COLORS = [
   '#4a90d9', '#e07030', '#8a9a6a', '#c4a035', '#e03030', '#9b59b6',
   '#16a085', '#2980b9', '#d35400', '#8e44ad', '#27ae60', '#c0392b',
@@ -50,6 +70,66 @@ export default function App() {
   const [drafts, setDrafts] = useState([])
   const [restoredDraftContent, setRestoredDraftContent] = useState(null)
   const [tags, setTags] = useState(DEFAULT_TAGS)
+  const [scheduledTasks, setScheduledTasks] = useState(() => loadScheduledFromStorage())
+  const scheduledTimersRef = useRef(new Map())
+
+  const executeScheduledTask = useCallback((taskId) => {
+    setScheduledTasks((prev) => {
+      const task = prev.find((t) => t.id === taskId)
+      if (!task) return prev
+
+      const payload = task.content.endsWith('\r\n') ? task.content : task.content + '\r\n'
+      const trimmed = task.content.trim()
+      setMessages((prevMsgs) => [
+        {
+          id: `scheduled-${Date.now()}`,
+          from: 'LOCAL',
+          to: 'NET',
+          priority: 'ROUTINE',
+          timestamp: new Date().toLocaleString('zh-CN'),
+          preview: trimmed.slice(0, 48) + (trimmed.length > 48 ? '…' : ''),
+          body: payload,
+          tags: [],
+          index: prevMsgs.length + 1,
+          scheduled: true,
+        },
+        ...prevMsgs,
+      ])
+
+      const remaining = prev.filter((t) => t.id !== taskId)
+      saveScheduledToStorage(remaining)
+      return remaining
+    })
+    scheduledTimersRef.current.delete(taskId)
+  }, [])
+
+  const registerTimer = useCallback((task) => {
+    const existing = scheduledTimersRef.current.get(task.id)
+    if (existing) {
+      clearTimeout(existing)
+    }
+    const delay = task.scheduledAt - Date.now()
+    if (delay <= 0) {
+      executeScheduledTask(task.id)
+      return
+    }
+    const timerId = setTimeout(() => executeScheduledTask(task.id), delay)
+    scheduledTimersRef.current.set(task.id, timerId)
+  }, [executeScheduledTask])
+
+  const clearAllTimers = useCallback(() => {
+    scheduledTimersRef.current.forEach((timerId) => clearTimeout(timerId))
+    scheduledTimersRef.current.clear()
+  }, [])
+
+  useEffect(() => {
+    scheduledTasks.forEach((task) => registerTimer(task))
+    return () => clearAllTimers()
+  }, [])
+
+  useEffect(() => {
+    saveScheduledToStorage(scheduledTasks)
+  }, [scheduledTasks])
 
   const handleSendToHistory = (msg) => {
     setMessages((prev) => [
@@ -60,6 +140,55 @@ export default function App() {
       },
       ...prev,
     ])
+  }
+
+  const addScheduledTask = (task) => {
+    const now = Date.now()
+    if (task.scheduledAt <= now) {
+      return { success: false, error: '发送时间必须晚于当前时间' }
+    }
+    const newTask = {
+      id: `scheduled-${Date.now()}`,
+      name: task.name || `定时任务 ${scheduledTasks.length + 1}`,
+      content: task.content,
+      scheduledAt: task.scheduledAt,
+      createdAt: new Date().toLocaleString('zh-CN'),
+    }
+    setScheduledTasks((prev) => [newTask, ...prev])
+    registerTimer(newTask)
+    return { success: true, task: newTask }
+  }
+
+  const cancelScheduledTask = (taskId) => {
+    const timerId = scheduledTimersRef.current.get(taskId)
+    if (timerId) {
+      clearTimeout(timerId)
+      scheduledTimersRef.current.delete(taskId)
+    }
+    setScheduledTasks((prev) => {
+      const remaining = prev.filter((t) => t.id !== taskId)
+      saveScheduledToStorage(remaining)
+      return remaining
+    })
+  }
+
+  const updateScheduledTask = (taskId, updates) => {
+    let updatedTask = null
+    setScheduledTasks((prev) => {
+      const updated = prev.map((t) => {
+        if (t.id === taskId) {
+          updatedTask = { ...t, ...updates, updatedAt: new Date().toLocaleString('zh-CN') }
+          return updatedTask
+        }
+        return t
+      })
+      saveScheduledToStorage(updated)
+      return updated
+    })
+    if (updatedTask && updates.scheduledAt !== undefined) {
+      registerTimer(updatedTask)
+    }
+    return updatedTask
   }
 
   const addDraft = (draft) => {
@@ -207,6 +336,7 @@ export default function App() {
             drafts={drafts}
             restoredContent={restoredDraftContent}
             onClearRestored={clearRestoredDraft}
+            onAddScheduledTask={addScheduledTask}
           />
         )}
         {tab === 'drafts' && (
@@ -216,6 +346,9 @@ export default function App() {
             onUpdateDraft={updateDraft}
             onDeleteDraft={deleteDraft}
             onRestoreToTerminal={restoreDraftToTerminal}
+            scheduledTasks={scheduledTasks}
+            onCancelScheduledTask={cancelScheduledTask}
+            onUpdateScheduledTask={updateScheduledTask}
           />
         )}
         {tab === 'history' && (
