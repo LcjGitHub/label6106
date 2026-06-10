@@ -33,6 +33,8 @@ export default function TerminalPage({
   const [scheduleName, setScheduleName] = useState('')
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleTime, setScheduleTime] = useState('')
+  const [attachments, setAttachments] = useState([])
+  const fileInputRef = useRef(null)
   const inputRef = useRef(null)
   const flushedRef = useRef('')
   const draftMenuRef = useRef(null)
@@ -92,6 +94,60 @@ export default function TerminalPage({
     setToast({ msg, type })
   }
 
+  const formatFileSize = (bytes) => {
+    if (bytes < 1024) return bytes + ' B'
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
+  }
+
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = (error) => reject(error)
+    })
+  }
+
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files || [])
+    const MAX_SIZE = 2 * 1024 * 1024
+
+    for (const file of files) {
+      if (file.size > MAX_SIZE) {
+        showToastMsg(`文件「${file.name}」超过 2MB 限制`, 'error')
+        continue
+      }
+
+      try {
+        const base64 = await fileToBase64(file)
+        const newAttachment = {
+          id: `att-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: file.name,
+          size: file.size,
+          type: file.type || 'application/octet-stream',
+          data: base64,
+        }
+        setAttachments((prev) => [...prev, newAttachment])
+        showToastMsg(`已添加附件「${file.name}」`, 'success')
+      } catch (err) {
+        showToastMsg(`文件「${file.name}」读取失败`, 'error')
+      }
+    }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  const handleRemoveAttachment = (id) => {
+    setAttachments((prev) => prev.filter((att) => att.id !== id))
+  }
+
+  const handleAttachClick = () => {
+    fileInputRef.current?.click()
+  }
+
   const handleEnableNotification = async () => {
     const granted = await NotificationManager.requestPermission()
     const currentPermission = NotificationManager.getPermission()
@@ -133,6 +189,14 @@ export default function TerminalPage({
     const payload = trimmed.endsWith('\r\n') ? trimmed : trimmed + '\r\n'
     const echo = `\r\n>>> TX ${new Date().toLocaleTimeString('zh-CN', { hour12: false })}\r\n${payload}\r\n`
 
+    const messageAttachments = attachments.map((att) => ({
+      id: att.id,
+      name: att.name,
+      size: att.size,
+      type: att.type,
+      data: att.data,
+    }))
+
     onSendToHistory?.({
       id: `local-${Date.now()}`,
       from: 'LOCAL',
@@ -141,13 +205,15 @@ export default function TerminalPage({
       timestamp: new Date().toLocaleString('zh-CN'),
       preview: trimmed.slice(0, 48) + (trimmed.length > 48 ? '…' : ''),
       body: payload,
+      attachments: messageAttachments,
     })
 
     setInput('')
+    setAttachments([])
     flushedRef.current = ''
     setIncoming(echo)
     setIsPrinting(true)
-  }, [input, isPrinting, onSendToHistory])
+  }, [input, isPrinting, onSendToHistory, attachments])
 
   const simulateReceive = useCallback(
     (text, { from = 'UNKNOWN' } = {}) => {
@@ -251,15 +317,28 @@ export default function TerminalPage({
       return
     }
 
-    const result = onAddScheduledTask?.({
+    const taskData = {
       name: scheduleName.trim() || trimmed.slice(0, 20) || '定时报文',
       content: input,
       scheduledAt,
-    })
+    }
+
+    if (attachments.length > 0) {
+      taskData.attachments = attachments.map((att) => ({
+        id: att.id,
+        name: att.name,
+        size: att.size,
+        type: att.type,
+        data: att.data,
+      }))
+    }
+
+    const result = onAddScheduledTask?.(taskData)
 
     if (result?.success) {
       showToastMsg(`定时发送已设置，将于 ${scheduledDateTime.toLocaleString('zh-CN')} 发送`)
       setInput('')
+      setAttachments([])
       closeSchedulePanel()
     } else if (result?.error) {
       showToastMsg(result.error, 'error')
@@ -321,9 +400,55 @@ export default function TerminalPage({
           disabled={isPrinting}
           spellCheck={false}
         />
+
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileSelect}
+          multiple
+          style={{ display: 'none' }}
+        />
+
+        {attachments.length > 0 && (
+          <div className="terminal-page__attachments">
+            <div className="terminal-page__attachments-label">
+              附件 ({attachments.length})
+            </div>
+            <div className="terminal-page__attachments-list">
+              {attachments.map((att) => (
+                <div key={att.id} className="terminal-page__attachment-item">
+                  <span className="terminal-page__attachment-icon">📎</span>
+                  <span className="terminal-page__attachment-name" title={att.name}>
+                    {att.name}
+                  </span>
+                  <span className="terminal-page__attachment-size">
+                    {formatFileSize(att.size)}
+                  </span>
+                  <button
+                    type="button"
+                    className="terminal-page__attachment-remove"
+                    onClick={() => handleRemoveAttachment(att.id)}
+                    title="移除附件"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="terminal-page__actions">
           <button type="button" onClick={sendMessage} disabled={isPrinting || !input.trim()}>
             发送 Enter
+          </button>
+          <button
+            type="button"
+            onClick={handleAttachClick}
+            disabled={isPrinting}
+            className="terminal-page__attach-btn"
+          >
+            📎 附件
           </button>
           <button
             type="button"

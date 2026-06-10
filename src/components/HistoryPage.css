@@ -1017,3 +1017,106 @@
     grid-template-rows: 40% 1fr;
   }
 }
+
+.history-page__item-attachment-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.1rem;
+  margin-right: 0.3rem;
+  padding: 0.05rem 0.25rem;
+  background: rgba(74, 144, 217, 0.15);
+  border: 1px solid rgba(74, 144, 217, 0.4);
+  border-radius: 2px;
+  font-size: 0.62rem;
+  color: #4a90d9;
+  font-weight: 600;
+}
+
+.history-page__attachments {
+  padding: 0.75rem 0.85rem;
+  border-top: 1px solid var(--bezel-dark);
+  background: rgba(255, 176, 0, 0.03);
+}
+
+.history-page__attachments-header {
+  margin-bottom: 0.5rem;
+}
+
+.history-page__attachments-title {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  color: var(--label-muted);
+  text-transform: uppercase;
+}
+
+.history-page__attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.history-page__attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--panel-bg);
+  border: 1px solid var(--bezel-dark);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font-mono);
+  transition: all 0.15s ease;
+}
+
+.history-page__attachment-item:hover {
+  background: rgba(74, 144, 217, 0.08);
+  border-color: var(--phosphor-dim);
+}
+
+.history-page__attachment-item .history-page__attachment-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.history-page__attachment-item .history-page__attachment-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.history-page__attachment-item .history-page__attachment-name {
+  font-size: 0.82rem;
+  color: var(--phosphor);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-page__attachment-item .history-page__attachment-size {
+  font-size: 0.7rem;
+  color: var(--label-muted);
+}
+
+.history-page__attachment-item .history-page__attachment-download {
+  flex-shrink: 0;
+  width: 1.8rem;
+  height: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(74, 144, 217, 0.15);
+  border: 1px solid rgba(74, 144, 217, 0.4);
+  border-radius: 2px;
+  color: #4a90d9;
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: all 0.15s ease;
+}
+
+.history-page__attachment-item:hover .history-page__attachment-download {
+  background: #4a90d9;
+  color: #fff;
+}

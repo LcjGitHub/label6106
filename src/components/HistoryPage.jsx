@@ -129,6 +129,22 @@ function formatRecallTime(isoString) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
 }
 
+function formatFileSize(bytes) {
+  if (!bytes) return '0 B'
+  if (bytes < 1024) return bytes + ' B'
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB'
+  return (bytes / (1024 * 1024)).toFixed(2) + ' MB'
+}
+
+function downloadAttachment(attachment) {
+  const link = document.createElement('a')
+  link.href = attachment.data
+  link.download = attachment.name
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
 export default function HistoryPage({
   messages,
   soundEnabled,
@@ -614,7 +630,14 @@ export default function HistoryPage({
                     })}
                   </span>
                 )}
-                <span className="history-page__item-preview">{msg.preview}</span>
+                <span className="history-page__item-preview">
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <span className="history-page__item-attachment-indicator" title={`包含 ${msg.attachments.length} 个附件`}>
+                      📎{msg.attachments.length}
+                    </span>
+                  )}
+                  {msg.preview}
+                </span>
                 {isWithinRecallWindow(msg) && (
                   <span className="history-page__item-actions">
                     <button
@@ -821,6 +844,39 @@ export default function HistoryPage({
                   showCursor={replaying && !done}
                   className="history-page__viewer"
                 />
+
+                {selected.attachments && selected.attachments.length > 0 && (
+                  <div className="history-page__attachments">
+                    <div className="history-page__attachments-header">
+                      <span className="history-page__attachments-title">
+                        📎 附件 ({selected.attachments.length})
+                      </span>
+                    </div>
+                    <div className="history-page__attachments-list">
+                      {selected.attachments.map((att) => (
+                        <button
+                          key={att.id}
+                          type="button"
+                          className="history-page__attachment-item"
+                          onClick={() => downloadAttachment(att)}
+                          title={`点击下载 ${att.name}`}
+                        >
+                          <span className="history-page__attachment-icon">📎</span>
+                          <span className="history-page__attachment-info">
+                            <span className="history-page__attachment-name" title={att.name}>
+                              {att.name}
+                            </span>
+                            <span className="history-page__attachment-size">
+                              {formatFileSize(att.size)}
+                            </span>
+                          </span>
+                          <span className="history-page__attachment-download">↓</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <footer className="history-page__legend">
                   <code>\r\n</code> 换行 · <code>\r</code> 回车至行首（覆盖） · 逐字电传打印
                 </footer>

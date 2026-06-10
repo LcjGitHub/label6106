@@ -96,18 +96,25 @@ export default function App() {
 
       const payload = task.content.endsWith('\r\n') ? task.content : task.content + '\r\n'
       const trimmed = task.content.trim()
+      const newMessage = {
+        id: `scheduled-${Date.now()}`,
+        from: 'LOCAL',
+        to: 'NET',
+        priority: 'ROUTINE',
+        timestamp: new Date().toLocaleString('zh-CN'),
+        preview: trimmed.slice(0, 48) + (trimmed.length > 48 ? '…' : ''),
+        body: payload,
+        tags: [],
+        index: 0,
+        scheduled: true,
+      }
+      if (task.attachments && task.attachments.length > 0) {
+        newMessage.attachments = task.attachments
+      }
       setMessages((prevMsgs) => [
         {
-          id: `scheduled-${Date.now()}`,
-          from: 'LOCAL',
-          to: 'NET',
-          priority: 'ROUTINE',
-          timestamp: new Date().toLocaleString('zh-CN'),
-          preview: trimmed.slice(0, 48) + (trimmed.length > 48 ? '…' : ''),
-          body: payload,
-          tags: [],
+          ...newMessage,
           index: prevMsgs.length + 1,
-          scheduled: true,
         },
         ...prevMsgs,
       ])

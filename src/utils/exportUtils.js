@@ -39,7 +39,26 @@ export function exportAsJson(message) {
     preview: message.preview,
     body: message.body,
   }
+  if (message.attachments && message.attachments.length > 0) {
+    data.attachments = message.attachments.map((att) => ({
+      id: att.id,
+      name: att.name,
+      size: att.size,
+      type: att.type,
+      data: att.data,
+    }))
+  }
   const content = JSON.stringify(data, null, 2)
   const filename = generateFilename(message, 'json')
   triggerDownload(content, filename, 'application/json;charset=utf-8')
+}
+
+export function exportAttachment(attachment) {
+  if (!attachment) return
+  const link = document.createElement('a')
+  link.href = attachment.data
+  link.download = attachment.name
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
