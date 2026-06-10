@@ -203,6 +203,7 @@
 }
 
 .history-page__detail {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -569,6 +570,238 @@
 .tag-filter__create-input--error {
   border-color: #e03030 !important;
   box-shadow: 0 0 0 1px rgba(224, 48, 48, 0.3) inset;
+}
+
+.history-page__list-item--recalled {
+  opacity: 0.85;
+}
+
+.history-page__item--recalled {
+  color: var(--label-muted);
+  opacity: 0.75;
+}
+
+.history-page__item--recalled:hover {
+  background: rgba(224, 48, 48, 0.04);
+}
+
+.history-page__item-top-right {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.history-page__recall-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid #e03030;
+  color: #e03030;
+  background: rgba(224, 48, 48, 0.08);
+  font-weight: 600;
+}
+
+.history-page__recall-badge--large {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.55rem;
+  margin-left: 0.6rem;
+  vertical-align: middle;
+}
+
+.history-page__item-recall-time {
+  font-size: 0.65rem;
+  color: #e03030;
+  opacity: 0.85;
+}
+
+.history-page__item-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.25rem;
+}
+
+.history-page__recall-btn {
+  padding: 0.15rem 0.5rem;
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  background: rgba(224, 48, 48, 0.08);
+  border: 1px solid #e03030;
+  color: #e03030;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: all 0.15s ease;
+}
+
+.history-page__recall-btn:hover {
+  background: #e03030;
+  color: #fff;
+  opacity: 1;
+}
+
+.history-page__recall-action-btn {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.75rem;
+  background: rgba(224, 48, 48, 0.08);
+  border: 2px outset #e03030;
+  color: #e03030;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  transition: all 0.15s ease;
+}
+
+.history-page__recall-action-btn:hover {
+  background: #e03030;
+  color: #fff;
+}
+
+.history-page__recall-info {
+  margin: 0.3rem 0 0;
+  font-size: 0.72rem;
+  color: #e03030;
+}
+
+.history-page__recalled-viewer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  padding: 2rem;
+  text-align: center;
+  background: rgba(224, 48, 48, 0.03);
+}
+
+.history-page__recalled-icon {
+  font-size: 3rem;
+  color: #e03030;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+.history-page__recalled-text {
+  margin: 0;
+  font-size: 1.1rem;
+  font-family: var(--font-mono);
+  color: #e03030;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.history-page__recalled-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--label-muted);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.history-page__modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: modal-fade-in 0.15s ease-out;
+}
+
+@keyframes modal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.history-page__modal {
+  background: var(--panel-bg);
+  border: 2px outset var(--bezel-light);
+  padding: 1.2rem 1.4rem;
+  min-width: 320px;
+  max-width: 90%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  animation: modal-slide-in 0.2s ease-out;
+}
+
+@keyframes modal-slide-in {
+  from {
+    opacity: 0;
+    transform: translateY(-1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.history-page__modal-title {
+  margin: 0 0 0.8rem;
+  font-size: 1rem;
+  color: var(--phosphor);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--bezel-dark);
+}
+
+.history-page__modal-message {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  color: var(--phosphor);
+  font-family: var(--font-mono);
+}
+
+.history-page__modal-hint {
+  margin: 0 0 1rem;
+  font-size: 0.75rem;
+  color: var(--label-muted);
+  font-family: var(--font-mono);
+}
+
+.history-page__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--bezel-dark);
+}
+
+.history-page__modal-btn--cancel,
+.history-page__modal-btn--confirm {
+  padding: 0.35rem 0.9rem;
+  font-size: 0.78rem;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.history-page__modal-btn--cancel {
+  background: var(--btn-bg);
+  border: 2px outset var(--btn-border);
+  color: var(--btn-fg);
+}
+
+.history-page__modal-btn--cancel:hover {
+  color: var(--phosphor);
+  border-color: var(--phosphor-dim);
+}
+
+.history-page__modal-btn--confirm {
+  background: rgba(224, 48, 48, 0.08);
+  border: 2px outset #e03030;
+  color: #e03030;
+}
+
+.history-page__modal-btn--confirm:hover {
+  background: #e03030;
+  color: #fff;
 }
 
 @media (max-width: 720px) {

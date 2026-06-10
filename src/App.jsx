@@ -117,6 +117,24 @@ export default function App() {
     )
   }
 
+  const recallMessage = (messageId) => {
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id === messageId) {
+          const recallTime = new Date().toISOString()
+          return {
+            ...m,
+            body: '',
+            preview: '[此报文已被撤回]',
+            recalled: true,
+            recalledAt: recallTime,
+          }
+        }
+        return m
+      })
+    )
+  }
+
   return (
     <div className="app">
       <header className="app__header">
@@ -181,6 +199,7 @@ export default function App() {
             onCreateTag={createTag}
             onAddTagToMessage={addTagToMessage}
             onRemoveTagFromMessage={removeTagFromMessage}
+            onRecallMessage={recallMessage}
           />
         )}
       </main>

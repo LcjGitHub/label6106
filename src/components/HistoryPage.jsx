@@ -52,6 +52,42 @@ function isInTimeRange(timestamp, range) {
   }
 }
 
+const RECALL_WINDOW_MS = 2 * 60 * 1000
+const RECALL_STORAGE_KEY = 'telex_recalled_messages'
+
+function loadRecalledFromStorage() {
+  try {
+    const raw = localStorage.getItem(RECALL_STORAGE_KEY)
+    return raw ? JSON.parse(raw) : {}
+  } catch {
+    return {}
+  }
+}
+
+function saveRecalledToStorage(data) {
+  try {
+    localStorage.setItem(RECALL_STORAGE_KEY, JSON.stringify(data))
+  } catch {
+  }
+}
+
+function parseTimestamp(timestamp) {
+  return new Date(timestamp.replace(' ', 'T')).getTime()
+}
+
+function isWithinRecallWindow(msg) {
+  if (msg.recalled) return false
+  const msgTime = parseTimestamp(msg.timestamp)
+  const now = Date.now()
+  return now - msgTime <= RECALL_WINDOW_MS
+}
+
+function formatRecallTime(isoString) {
+  const d = new Date(isoString)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`
+}
+
 export default function HistoryPage({
   messages,
   soundEnabled,
@@ -59,6 +95,7 @@ export default function HistoryPage({
   onCreateTag,
   onAddTagToMessage,
   onRemoveTagFromMessage,
+  onRecallMessage,
 }) {
   const [selected, setSelected] = useState(null)
   const [replaying, setReplaying] = useState(false)
@@ -67,7 +104,26 @@ export default function HistoryPage({
   const [timeRangeFilter, setTimeRangeFilter] = useState('all')
   const [selectedTagIds, setSelectedTagIds] = useState([])
   const [exportToast, setExportToast] = useState(null)
+  const [confirmRecall, setConfirmRecall] = useState(null)
   const { playClick, playBell } = useTypewriterSound(soundEnabled)
+
+  useEffect(() => {
+    const stored = loadRecalledFromStorage()
+    const hasNew = messages.some(
+      (m) => m.recalled && !stored[m.id]
+    )
+    if (hasNew) {
+      const updated = { ...stored }
+      messages.forEach((m) => {
+        if (m.recalled) {
+          updated[m.id] = {
+            recalledAt: m.recalledAt,
+          }
+        }
+      })
+      saveRecalledToStorage(updated)
+    }
+  }, [messages])
 
   const getTagById = (tagId) => tags.find((t) => t.id === tagId)
 
@@ -184,6 +240,24 @@ export default function HistoryPage({
     reset()
   }
 
+  const handleRequestRecall = (msg, e) => {
+    if (e) {
+      e.stopPropagation()
+    }
+    setConfirmRecall(msg)
+  }
+
+  const handleConfirmRecall = () => {
+    if (confirmRecall && onRecallMessage) {
+      onRecallMessage(confirmRecall.id)
+    }
+    setConfirmRecall(null)
+  }
+
+  const handleCancelRecall = () => {
+    setConfirmRecall(null)
+  }
+
   return (
     <div className="history-page">
       <aside className="history-page__list-panel">
@@ -233,22 +307,32 @@ export default function HistoryPage({
         <ul className="history-page__list" role="list">
           {filteredMessages.length > 0 ? (
             filteredMessages.map((msg) => (
-            <li key={msg.id}>
+            <li key={msg.id} className={msg.recalled ? 'history-page__list-item--recalled' : ''}>
               <button
                 type="button"
-                className={`history-page__item ${selected?.id === msg.id ? 'history-page__item--active' : ''}`}
+                className={`history-page__item ${selected?.id === msg.id ? 'history-page__item--active' : ''} ${msg.recalled ? 'history-page__item--recalled' : ''}`}
                 onClick={() => openMessage(msg)}
               >
                 <span className="history-page__item-top">
                   <span className="history-page__item-id">#{String(msg.index).padStart(3, '0')}</span>
-                  <span className={`history-page__priority ${PRIORITY_CLASS[msg.priority] ?? ''}`}>
-                    {msg.priority}
+                  <span className="history-page__item-top-right">
+                    {msg.recalled && (
+                      <span className="history-page__recall-badge">已撤回</span>
+                    )}
+                    <span className={`history-page__priority ${PRIORITY_CLASS[msg.priority] ?? ''}`}>
+                      {msg.priority}
+                    </span>
                   </span>
                 </span>
                 <span className="history-page__item-route">
                   {msg.from} → {msg.to}
                 </span>
                 <span className="history-page__item-time">{msg.timestamp}</span>
+                {msg.recalled && msg.recalledAt && (
+                  <span className="history-page__item-recall-time">
+                    撤回于 {formatRecallTime(msg.recalledAt)}
+                  </span>
+                )}
                 {msg.tags && msg.tags.length > 0 && (
                   <span className="history-page__item-tags">
                     {msg.tags.map((tagId) => {
@@ -267,6 +351,18 @@ export default function HistoryPage({
                   </span>
                 )}
                 <span className="history-page__item-preview">{msg.preview}</span>
+                {isWithinRecallWindow(msg) && (
+                  <span className="history-page__item-actions">
+                    <button
+                      type="button"
+                      className="history-page__recall-btn"
+                      onClick={(e) => handleRequestRecall(msg, e)}
+                      title="撤回此报文"
+                    >
+                      撤回
+                    </button>
+                  </span>
+                )}
               </button>
             </li>
           ))
@@ -280,17 +376,46 @@ export default function HistoryPage({
       </aside>
 
       <section className="history-page__detail">
+        {confirmRecall && (
+          <div className="history-page__modal-overlay" onClick={handleCancelRecall}>
+            <div className="history-page__modal" onClick={(e) => e.stopPropagation()}>
+              <h4 className="history-page__modal-title">确认撤回报文</h4>
+              <p className="history-page__modal-message">
+                您确定要撤回报文 #{String(confirmRecall.index).padStart(3, '0')} 吗？
+              </p>
+              <p className="history-page__modal-hint">
+                撤回后报文内容将被清空，此操作不可撤销。
+              </p>
+              <div className="history-page__modal-actions">
+                <button type="button" className="history-page__modal-btn--cancel" onClick={handleCancelRecall}>
+                  取消
+                </button>
+                <button type="button" className="history-page__modal-btn--confirm" onClick={handleConfirmRecall}>
+                  确认撤回
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
         {selected ? (
           <>
             <header className="history-page__detail-header">
               <div className="history-page__detail-header-main">
                 <h3>
                   报文 #{String(selected.index).padStart(3, '0')}
+                  {selected.recalled && (
+                    <span className="history-page__recall-badge history-page__recall-badge--large">已撤回</span>
+                  )}
                 </h3>
                 <p className="history-page__meta">
                   {selected.from} → {selected.to} · {selected.timestamp} ·{' '}
                   <span className={PRIORITY_CLASS[selected.priority]}>{selected.priority}</span>
                 </p>
+                {selected.recalled && selected.recalledAt && (
+                  <p className="history-page__recall-info">
+                    此报文已于 {formatRecallTime(selected.recalledAt)} 被撤回
+                  </p>
+                )}
                 <div className="history-page__tag-manager">
                   <div className="history-page__tag-manager-label">标签管理：</div>
                   <div className="history-page__tag-manager-tags">
@@ -342,20 +467,35 @@ export default function HistoryPage({
                 </div>
               </div>
               <div className="history-page__detail-actions">
+                {isWithinRecallWindow(selected) && (
+                  <button
+                    type="button"
+                    className="history-page__recall-action-btn"
+                    onClick={() => handleRequestRecall(selected)}
+                  >
+                    撤回
+                  </button>
+                )}
                 {replaying && !done && (
                   <button type="button" onClick={skip}>
                     跳过
                   </button>
                 )}
-                <button type="button" onClick={() => openMessage(selected)}>
-                  重播
-                </button>
-                <button type="button" onClick={handleExportText}>
-                  导出文本
-                </button>
-                <button type="button" onClick={handleExportJson}>
-                  导出结构化数据
-                </button>
+                {!selected.recalled && (
+                  <button type="button" onClick={() => openMessage(selected)}>
+                    重播
+                  </button>
+                )}
+                {!selected.recalled && (
+                  <>
+                    <button type="button" onClick={handleExportText}>
+                      导出文本
+                    </button>
+                    <button type="button" onClick={handleExportJson}>
+                      导出结构化数据
+                    </button>
+                  </>
+                )}
                 <button type="button" onClick={closeDetail}>
                   关闭
                 </button>
@@ -366,14 +506,26 @@ export default function HistoryPage({
                 </div>
               )}
             </header>
-            <TeletypeOutput
-              text={replaying ? displayed : body}
-              showCursor={replaying && !done}
-              className="history-page__viewer"
-            />
-            <footer className="history-page__legend">
-              <code>\r\n</code> 换行 · <code>\r</code> 回车至行首（覆盖） · 逐字电传打印
-            </footer>
+            {selected.recalled ? (
+              <div className="history-page__recalled-viewer">
+                <div className="history-page__recalled-icon">⚑</div>
+                <p className="history-page__recalled-text">此报文已被撤回</p>
+                <p className="history-page__recalled-hint">
+                  报文发送者已于 {formatRecallTime(selected.recalledAt)} 撤回此报文，内容已被清空。
+                </p>
+              </div>
+            ) : (
+              <>
+                <TeletypeOutput
+                  text={replaying ? displayed : body}
+                  showCursor={replaying && !done}
+                  className="history-page__viewer"
+                />
+                <footer className="history-page__legend">
+                  <code>\r\n</code> 换行 · <code>\r</code> 回车至行首（覆盖） · 逐字电传打印
+                </footer>
+              </>
+            )}
           </>
         ) : (
           <div className="history-page__empty">
