@@ -57,6 +57,7 @@ export default function HistoryPage({ messages, soundEnabled }) {
   const [searchKeyword, setSearchKeyword] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [timeRangeFilter, setTimeRangeFilter] = useState('all')
+  const [exportToast, setExportToast] = useState(null)
   const { playClick, playBell } = useTypewriterSound(soundEnabled)
 
   const filteredMessages = useMemo(() => {
@@ -84,14 +85,6 @@ export default function HistoryPage({ messages, soundEnabled }) {
     })
   }, [messages, searchKeyword, priorityFilter, timeRangeFilter])
 
-  useEffect(() => {
-    if (selected && !filteredMessages.some((m) => m.id === selected.id)) {
-      setSelected(null)
-      setReplaying(false)
-      reset()
-    }
-  }, [filteredMessages, selected, reset])
-
   const body = selected?.body ?? ''
 
   const handleComplete = () => {
@@ -105,6 +98,34 @@ export default function HistoryPage({ messages, soundEnabled }) {
     onTick: () => playClick(),
     onComplete: handleComplete,
   })
+
+  useEffect(() => {
+    if (selected && !filteredMessages.some((m) => m.id === selected.id)) {
+      setSelected(null)
+      setReplaying(false)
+      reset()
+    }
+  }, [filteredMessages, selected, reset])
+
+  useEffect(() => {
+    if (!exportToast) return
+    const timer = setTimeout(() => setExportToast(null), 2000)
+    return () => clearTimeout(timer)
+  }, [exportToast])
+
+  const showExportToast = (msg) => {
+    setExportToast({ msg })
+  }
+
+  const handleExportText = () => {
+    exportAsText(selected)
+    showExportToast('已导出文本文件')
+  }
+
+  const handleExportJson = () => {
+    exportAsJson(selected)
+    showExportToast('已导出结构化数据文件')
+  }
 
   const openMessage = (msg) => {
     setSelected(msg)
@@ -212,16 +233,21 @@ export default function HistoryPage({ messages, soundEnabled }) {
                 <button type="button" onClick={() => openMessage(selected)}>
                   重播
                 </button>
-                <button type="button" onClick={() => exportAsText(selected)}>
-                  导出TXT
+                <button type="button" onClick={handleExportText}>
+                  导出文本
                 </button>
-                <button type="button" onClick={() => exportAsJson(selected)}>
-                  导出JSON
+                <button type="button" onClick={handleExportJson}>
+                  导出结构化数据
                 </button>
                 <button type="button" onClick={closeDetail}>
                   关闭
                 </button>
               </div>
+              {exportToast && (
+                <div className="history-page__toast">
+                  {exportToast.msg}
+                </div>
+              )}
             </header>
             <TeletypeOutput
               text={replaying ? displayed : body}

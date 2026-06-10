@@ -211,6 +211,7 @@
 }
 
 .history-page__detail-header {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -233,6 +234,7 @@
 
 .history-page__detail-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
   flex-shrink: 0;
 }
@@ -240,6 +242,31 @@
 .history-page__detail-actions button {
   padding: 0.3rem 0.65rem;
   font-size: 0.75rem;
+}
+
+.history-page__toast {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.85rem;
+  padding: 0.4rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: var(--btn-bg);
+  border: 2px outset var(--btn-border);
+  color: var(--phosphor);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  animation: toast-fade-in 0.2s ease-out;
+}
+
+@keyframes toast-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.3rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .history-page__viewer {
