@@ -15,7 +15,7 @@ export default function TerminalPage({
   onOverwriteDraft,
   onFindDraftByName,
   drafts,
-  restoredContent,
+  restoredData,
   onClearRestored,
   onAddScheduledTask,
 }) {
@@ -43,12 +43,13 @@ export default function TerminalPage({
   const { playClick, playBell } = useTypewriterSound(soundEnabled)
 
   useEffect(() => {
-    if (restoredContent != null) {
-      setInput(restoredContent)
+    if (restoredData != null) {
+      setInput(restoredData.content || '')
+      setAttachments(restoredData.attachments || [])
       onClearRestored?.()
       inputRef.current?.focus()
     }
-  }, [restoredContent, onClearRestored])
+  }, [restoredData, onClearRestored])
 
   useEffect(() => {
     if (!showDraftMenu) return
@@ -182,12 +183,19 @@ export default function TerminalPage({
     onComplete: handlePrintComplete,
   })
 
+  const hasContent = input.trim() || attachments.length > 0
+
   const sendMessage = useCallback(() => {
     const trimmed = input.trim()
-    if (!trimmed || isPrinting) return
+    if ((!trimmed && attachments.length === 0) || isPrinting) return
 
-    const payload = trimmed.endsWith('\r\n') ? trimmed : trimmed + '\r\n'
+    const payload = trimmed
+      ? (trimmed.endsWith('\r\n') ? trimmed : trimmed + '\r\n')
+      : `[附件报文] ${attachments.length} 个附件\r\n`
     const echo = `\r\n>>> TX ${new Date().toLocaleTimeString('zh-CN', { hour12: false })}\r\n${payload}\r\n`
+    const preview = trimmed
+      ? trimmed.slice(0, 48) + (trimmed.length > 48 ? '…' : '')
+      : `[附件] ${attachments.map((a) => a.name).join(', ')}`
 
     const messageAttachments = attachments.map((att) => ({
       id: att.id,
@@ -203,7 +211,7 @@ export default function TerminalPage({
       to: 'NET',
       priority: 'ROUTINE',
       timestamp: new Date().toLocaleString('zh-CN'),
-      preview: trimmed.slice(0, 48) + (trimmed.length > 48 ? '…' : ''),
+      preview,
       body: payload,
       attachments: messageAttachments,
     })
@@ -236,16 +244,16 @@ export default function TerminalPage({
   )
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && hasContent) {
       e.preventDefault()
       sendMessage()
     }
   }
 
   const openSaveDraftPanel = () => {
+    if (!hasContent) return
     const trimmed = input.trim()
-    if (!trimmed) return
-    setDraftNameInput(trimmed.slice(0, 20))
+    setDraftNameInput(trimmed ? trimmed.slice(0, 20) : `附件草稿 ${attachments.length}`)
     setOverwriteCandidate(null)
     setShowSaveDraftPanel(true)
   }
@@ -259,7 +267,7 @@ export default function TerminalPage({
   const handleConfirmSaveDraft = () => {
     const name = draftNameInput.trim()
     const content = input
-    if (!name && !content.trim()) return
+    if (!name && !content.trim() && attachments.length === 0) return
 
     const existing = onFindDraftByName?.(name)
     if (existing && existing.content !== content) {
@@ -268,10 +276,10 @@ export default function TerminalPage({
     }
 
     if (existing) {
-      onOverwriteDraft?.(existing.id, content)
+      onOverwriteDraft?.(existing.id, { content, attachments: attachments.length > 0 ? attachments.map((att) => ({ id: att.id, name: att.name, size: att.size, type: att.type, data: att.data })) : null })
       showToastMsg(`已更新草稿「${name}」`)
     } else {
-      onSaveDraft?.({ name, content })
+      onSaveDraft?.({ name, content, attachments: attachments.length > 0 ? attachments.map((att) => ({ id: att.id, name: att.name, size: att.size, type: att.type, data: att.data })) : null })
       showToastMsg(`草稿「${name || '未命名'}」已保存`)
     }
     closeSaveDraftPanel()
@@ -279,14 +287,14 @@ export default function TerminalPage({
 
   const handleOverwriteConfirm = () => {
     if (!overwriteCandidate) return
-    onOverwriteDraft?.(overwriteCandidate.id, input)
+    onOverwriteDraft?.(overwriteCandidate.id, { content: input, attachments: attachments.length > 0 ? attachments.map((att) => ({ id: att.id, name: att.name, size: att.size, type: att.type, data: att.data })) : null })
     showToastMsg(`已覆盖草稿「${overwriteCandidate.name}」`)
     closeSaveDraftPanel()
   }
 
   const openSchedulePanel = () => {
+    if (!hasContent) return
     const trimmed = input.trim()
-    if (!trimmed) return
     const now = new Date()
     now.setMinutes(now.getMinutes() + 1)
     const dateStr = now.toISOString().split('T')[0]
@@ -306,7 +314,7 @@ export default function TerminalPage({
 
   const handleConfirmSchedule = () => {
     const trimmed = input.trim()
-    if (!trimmed || !scheduleDate || !scheduleTime) return
+    if ((!trimmed && attachments.length === 0) || !scheduleDate || !scheduleTime) return
 
     const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`)
     const scheduledAt = scheduledDateTime.getTime()
@@ -347,6 +355,7 @@ export default function TerminalPage({
 
   const handleRestoreDraft = (draft) => {
     setInput(draft.content)
+    setAttachments(draft.attachments || [])
     setShowDraftMenu(false)
     inputRef.current?.focus()
   }
@@ -439,7 +448,7 @@ export default function TerminalPage({
         )}
 
         <div className="terminal-page__actions">
-          <button type="button" onClick={sendMessage} disabled={isPrinting || !input.trim()}>
+          <button type="button" onClick={sendMessage} disabled={isPrinting || !hasContent}>
             发送 Enter
           </button>
           <button
@@ -453,14 +462,14 @@ export default function TerminalPage({
           <button
             type="button"
             onClick={openSaveDraftPanel}
-            disabled={isPrinting || !input.trim()}
+            disabled={isPrinting || !hasContent}
           >
             保存草稿
           </button>
           <button
             type="button"
             onClick={openSchedulePanel}
-            disabled={isPrinting || !input.trim()}
+            disabled={isPrinting || !hasContent}
             className="terminal-page__schedule-btn"
           >
             定时发送
@@ -569,7 +578,7 @@ export default function TerminalPage({
                   <button
                     type="button"
                     onClick={handleConfirmSaveDraft}
-                    disabled={!draftNameInput.trim() && !input.trim()}
+                    disabled={!draftNameInput.trim() && !input.trim() && attachments.length === 0}
                   >
                     保存
                   </button>
@@ -627,6 +636,21 @@ export default function TerminalPage({
                   />
                 </div>
               </div>
+              {attachments.length > 0 && (
+                <div className="terminal-page__schedule-attachments">
+                  <div className="terminal-page__schedule-attachments-label">
+                    📎 待发送附件 ({attachments.length})
+                  </div>
+                  <div className="terminal-page__schedule-attachments-list">
+                    {attachments.map((att) => (
+                      <div key={att.id} className="terminal-page__schedule-attachment-item">
+                        <span className="terminal-page__schedule-attachment-name">{att.name}</span>
+                        <span className="terminal-page__schedule-attachment-size">{formatFileSize(att.size)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="terminal-page__schedule-actions">
               <button

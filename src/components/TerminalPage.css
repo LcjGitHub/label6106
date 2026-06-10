@@ -429,3 +429,49 @@
   border-color: #e03030;
   color: #e03030;
 }
+
+.terminal-page__schedule-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem 0.65rem;
+  background: rgba(255, 176, 0, 0.05);
+  border: 1px dashed var(--bezel-dark);
+}
+
+.terminal-page__schedule-attachments-label {
+  font-size: 0.72rem;
+  color: var(--label-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+.terminal-page__schedule-attachments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.terminal-page__schedule-attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.4rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+.terminal-page__schedule-attachment-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--phosphor);
+}
+
+.terminal-page__schedule-attachment-size {
+  flex-shrink: 0;
+  font-size: 0.68rem;
+  color: var(--label-muted);
+}

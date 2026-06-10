@@ -68,7 +68,7 @@ export default function App() {
   const [soundEnabled, setSoundEnabled] = useState(false)
   const [messages, setMessages] = useState(() => mergeRecalledMessages(MOCK_MESSAGES))
   const [drafts, setDrafts] = useState([])
-  const [restoredDraftContent, setRestoredDraftContent] = useState(null)
+  const [restoredDraftData, setRestoredDraftData] = useState(null)
   const [tags, setTags] = useState(DEFAULT_TAGS)
   const [scheduledTasks, setScheduledTasks] = useState(() => loadScheduledFromStorage())
   const scheduledTimersRef = useRef(new Map())
@@ -179,6 +179,9 @@ export default function App() {
       scheduledAt: task.scheduledAt,
       createdAt: new Date().toLocaleString('zh-CN'),
     }
+    if (task.attachments && task.attachments.length > 0) {
+      newTask.attachments = task.attachments
+    }
     setScheduledTasks((prev) => [newTask, ...prev])
     registerTimer(newTask)
     return { success: true, task: newTask }
@@ -223,6 +226,9 @@ export default function App() {
       content: draft.content || '',
       createdAt: new Date().toLocaleString('zh-CN'),
     }
+    if (draft.attachments && draft.attachments.length > 0) {
+      newDraft.attachments = draft.attachments
+    }
     setDrafts((prev) => [newDraft, ...prev])
     return newDraft
   }
@@ -231,13 +237,20 @@ export default function App() {
     return drafts.find((d) => d.name === name)
   }
 
-  const overwriteDraft = (id, content) => {
+  const overwriteDraft = (id, data) => {
     setDrafts((prev) =>
-      prev.map((d) =>
-        d.id === id
-          ? { ...d, content, updatedAt: new Date().toLocaleString('zh-CN') }
-          : d
-      )
+      prev.map((d) => {
+        if (d.id !== id) return d
+        const updated = { ...d, content: typeof data === 'string' ? data : data.content ?? d.content, updatedAt: new Date().toLocaleString('zh-CN') }
+        if (typeof data !== 'string' && data.attachments !== undefined) {
+          if (data.attachments && data.attachments.length > 0) {
+            updated.attachments = data.attachments
+          } else {
+            delete updated.attachments
+          }
+        }
+        return updated
+      })
     )
   }
 
@@ -251,13 +264,17 @@ export default function App() {
     setDrafts((prev) => prev.filter((d) => d.id !== id))
   }
 
-  const restoreDraftToTerminal = (content) => {
-    setRestoredDraftContent(content)
+  const restoreDraftToTerminal = (data) => {
+    if (typeof data === 'string') {
+      setRestoredDraftData({ content: data, attachments: [] })
+    } else {
+      setRestoredDraftData({ content: data.content || '', attachments: data.attachments || [] })
+    }
     setTab('terminal')
   }
 
   const clearRestoredDraft = () => {
-    setRestoredDraftContent(null)
+    setRestoredDraftData(null)
   }
 
   const createTag = (name) => {
@@ -363,7 +380,7 @@ export default function App() {
             onOverwriteDraft={overwriteDraft}
             onFindDraftByName={findDraftByName}
             drafts={drafts}
-            restoredContent={restoredDraftContent}
+            restoredData={restoredDraftData}
             onClearRestored={clearRestoredDraft}
             onAddScheduledTask={addScheduledTask}
           />

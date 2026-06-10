@@ -152,17 +152,18 @@ export default function DraftPage({
   const handleRestore = () => {
     if (!selected) return
     const content = editingContent || selected.content
+    const attachments = selected.attachments || []
     if (isDirty) {
       setDirtyPrompt({
         type: 'restore',
         next: () => {
-          onRestoreToTerminal?.(content)
+          onRestoreToTerminal?.({ content, attachments })
           setDirtyPrompt(null)
         },
       })
       return
     }
-    onRestoreToTerminal?.(content)
+    onRestoreToTerminal?.({ content, attachments })
   }
 
   const formatScheduledTime = (timestamp) => {

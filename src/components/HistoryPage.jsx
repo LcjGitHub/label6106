@@ -845,42 +845,42 @@ export default function HistoryPage({
                   className="history-page__viewer"
                 />
 
-                {selected.attachments && selected.attachments.length > 0 && (
-                  <div className="history-page__attachments">
-                    <div className="history-page__attachments-header">
-                      <span className="history-page__attachments-title">
-                        📎 附件 ({selected.attachments.length})
-                      </span>
-                    </div>
-                    <div className="history-page__attachments-list">
-                      {selected.attachments.map((att) => (
-                        <button
-                          key={att.id}
-                          type="button"
-                          className="history-page__attachment-item"
-                          onClick={() => downloadAttachment(att)}
-                          title={`点击下载 ${att.name}`}
-                        >
-                          <span className="history-page__attachment-icon">📎</span>
-                          <span className="history-page__attachment-info">
-                            <span className="history-page__attachment-name" title={att.name}>
-                              {att.name}
-                            </span>
-                            <span className="history-page__attachment-size">
-                              {formatFileSize(att.size)}
-                            </span>
-                          </span>
-                          <span className="history-page__attachment-download">↓</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
                 <footer className="history-page__legend">
                   <code>\r\n</code> 换行 · <code>\r</code> 回车至行首（覆盖） · 逐字电传打印
                 </footer>
               </>
+            )}
+
+            {selected.attachments && selected.attachments.length > 0 && (
+              <div className="history-page__attachments">
+                <div className="history-page__attachments-header">
+                  <span className="history-page__attachments-title">
+                    📎 附件 ({selected.attachments.length})
+                  </span>
+                </div>
+                <div className="history-page__attachments-list">
+                  {selected.attachments.map((att) => (
+                    <button
+                      key={att.id}
+                      type="button"
+                      className="history-page__attachment-item"
+                      onClick={() => downloadAttachment(att)}
+                      title={`点击下载 ${att.name}`}
+                    >
+                      <span className="history-page__attachment-icon">📎</span>
+                      <span className="history-page__attachment-info">
+                        <span className="history-page__attachment-name" title={att.name}>
+                          {att.name}
+                        </span>
+                        <span className="history-page__attachment-size">
+                          {formatFileSize(att.size)}
+                        </span>
+                      </span>
+                      <span className="history-page__attachment-download">↓</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </>
         ) : (
