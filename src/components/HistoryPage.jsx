@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import TeletypeOutput from './TeletypeOutput'
+import TagFilter from './TagFilter'
 import { useTypewriter } from '../hooks/useTypewriter'
 import { useTypewriterSound } from '../hooks/useTypewriterSound'
 import { exportAsText, exportAsJson } from '../utils/exportUtils'
@@ -51,14 +52,24 @@ function isInTimeRange(timestamp, range) {
   }
 }
 
-export default function HistoryPage({ messages, soundEnabled }) {
+export default function HistoryPage({
+  messages,
+  soundEnabled,
+  tags,
+  onCreateTag,
+  onAddTagToMessage,
+  onRemoveTagFromMessage,
+}) {
   const [selected, setSelected] = useState(null)
   const [replaying, setReplaying] = useState(false)
   const [searchKeyword, setSearchKeyword] = useState('')
   const [priorityFilter, setPriorityFilter] = useState('all')
   const [timeRangeFilter, setTimeRangeFilter] = useState('all')
+  const [selectedTagIds, setSelectedTagIds] = useState([])
   const [exportToast, setExportToast] = useState(null)
   const { playClick, playBell } = useTypewriterSound(soundEnabled)
+
+  const getTagById = (tagId) => tags.find((t) => t.id === tagId)
 
   const filteredMessages = useMemo(() => {
     const keyword = searchKeyword.trim().toLowerCase()
@@ -68,6 +79,13 @@ export default function HistoryPage({ messages, soundEnabled }) {
       }
       if (!isInTimeRange(msg.timestamp, timeRangeFilter)) {
         return false
+      }
+      if (selectedTagIds.length > 0) {
+        const msgTagIds = msg.tags || []
+        const hasAllTags = selectedTagIds.every((tagId) => msgTagIds.includes(tagId))
+        if (!hasAllTags) {
+          return false
+        }
       }
       if (keyword) {
         const subject = extractSubject(msg.body).toLowerCase()
@@ -83,7 +101,29 @@ export default function HistoryPage({ messages, soundEnabled }) {
       }
       return true
     })
-  }, [messages, searchKeyword, priorityFilter, timeRangeFilter])
+  }, [messages, searchKeyword, priorityFilter, timeRangeFilter, selectedTagIds])
+
+  const handleToggleTagFilter = (tagId) => {
+    if (tagId === null) {
+      setSelectedTagIds([])
+      return
+    }
+    setSelectedTagIds((prev) =>
+      prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId]
+    )
+  }
+
+  const handleAddTagToSelected = (tagId) => {
+    if (selected && !selected.tags.includes(tagId)) {
+      onAddTagToMessage(selected.id, tagId)
+    }
+  }
+
+  const handleRemoveTagFromSelected = (tagId) => {
+    if (selected && selected.tags.includes(tagId)) {
+      onRemoveTagFromMessage(selected.id, tagId)
+    }
+  }
 
   const body = selected?.body ?? ''
 
@@ -178,6 +218,12 @@ export default function HistoryPage({ messages, soundEnabled }) {
               ))}
             </select>
           </div>
+          <TagFilter
+            tags={tags}
+            selectedTagIds={selectedTagIds}
+            onToggleTag={handleToggleTagFilter}
+            onCreateTag={onCreateTag}
+          />
         </div>
         <ul className="history-page__list" role="list">
           {filteredMessages.length > 0 ? (
@@ -198,6 +244,23 @@ export default function HistoryPage({ messages, soundEnabled }) {
                   {msg.from} → {msg.to}
                 </span>
                 <span className="history-page__item-time">{msg.timestamp}</span>
+                {msg.tags && msg.tags.length > 0 && (
+                  <span className="history-page__item-tags">
+                    {msg.tags.map((tagId) => {
+                      const tag = getTagById(tagId)
+                      if (!tag) return null
+                      return (
+                        <span
+                          key={tagId}
+                          className="history-page__item-tag"
+                          style={{ background: tag.color, color: '#fff' }}
+                        >
+                          {tag.name}
+                        </span>
+                      )
+                    })}
+                  </span>
+                )}
                 <span className="history-page__item-preview">{msg.preview}</span>
               </button>
             </li>
@@ -215,7 +278,7 @@ export default function HistoryPage({ messages, soundEnabled }) {
         {selected ? (
           <>
             <header className="history-page__detail-header">
-              <div>
+              <div className="history-page__detail-header-main">
                 <h3>
                   报文 #{String(selected.index).padStart(3, '0')}
                 </h3>
@@ -223,6 +286,55 @@ export default function HistoryPage({ messages, soundEnabled }) {
                   {selected.from} → {selected.to} · {selected.timestamp} ·{' '}
                   <span className={PRIORITY_CLASS[selected.priority]}>{selected.priority}</span>
                 </p>
+                <div className="history-page__tag-manager">
+                  <div className="history-page__tag-manager-label">标签管理：</div>
+                  <div className="history-page__tag-manager-tags">
+                    {selected.tags && selected.tags.length > 0 ? (
+                      selected.tags.map((tagId) => {
+                        const tag = getTagById(tagId)
+                        if (!tag) return null
+                        return (
+                          <span
+                            key={tagId}
+                            className="history-page__managed-tag"
+                            style={{ background: tag.color, color: '#fff' }}
+                          >
+                            {tag.name}
+                            <button
+                              type="button"
+                              className="history-page__managed-tag-remove"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleRemoveTagFromSelected(tagId)
+                              }}
+                              title="移除标签"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        )
+                      })
+                    ) : (
+                      <span className="history-page__tag-manager-empty">暂无标签</span>
+                    )}
+                  </div>
+                  <div className="history-page__tag-manager-add">
+                    <span className="history-page__tag-manager-add-label">+ 添加：</span>
+                    {tags
+                      .filter((t) => !selected.tags.includes(t.id))
+                      .map((tag) => (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          className="history-page__tag-add-btn"
+                          style={{ color: tag.color, borderColor: tag.color }}
+                          onClick={() => handleAddTagToSelected(tag.id)}
+                        >
+                          {tag.name}
+                        </button>
+                      ))}
+                  </div>
+                </div>
               </div>
               <div className="history-page__detail-actions">
                 {replaying && !done && (

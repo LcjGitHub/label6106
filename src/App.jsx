@@ -2,8 +2,13 @@ import { useState } from 'react'
 import TerminalPage from './components/TerminalPage'
 import HistoryPage from './components/HistoryPage'
 import DraftPage from './components/DraftPage'
-import { MOCK_MESSAGES } from './data/mockMessages'
+import { MOCK_MESSAGES, DEFAULT_TAGS } from './data/mockMessages'
 import './App.css'
+
+const TAG_COLORS = [
+  '#4a90d9', '#e07030', '#8a9a6a', '#c4a035', '#e03030', '#9b59b6',
+  '#16a085', '#2980b9', '#d35400', '#8e44ad', '#27ae60', '#c0392b',
+]
 
 const TABS = [
   { id: 'terminal', label: '终端' },
@@ -17,12 +22,14 @@ export default function App() {
   const [messages, setMessages] = useState(MOCK_MESSAGES)
   const [drafts, setDrafts] = useState([])
   const [restoredDraftContent, setRestoredDraftContent] = useState(null)
+  const [tags, setTags] = useState(DEFAULT_TAGS)
 
   const handleSendToHistory = (msg) => {
     setMessages((prev) => [
       {
         ...msg,
         index: prev.length + 1,
+        tags: msg.tags || [],
       },
       ...prev,
     ])
@@ -70,6 +77,40 @@ export default function App() {
 
   const clearRestoredDraft = () => {
     setRestoredDraftContent(null)
+  }
+
+  const createTag = (name) => {
+    const trimmedName = name.trim()
+    if (!trimmedName) return null
+    const exists = tags.some((t) => t.name === trimmedName)
+    if (exists) return null
+    const newTag = {
+      id: `tag-${Date.now()}`,
+      name: trimmedName,
+      color: TAG_COLORS[tags.length % TAG_COLORS.length],
+    }
+    setTags((prev) => [...prev, newTag])
+    return newTag
+  }
+
+  const addTagToMessage = (messageId, tagId) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId && !m.tags.includes(tagId)
+          ? { ...m, tags: [...m.tags, tagId] }
+          : m
+      )
+    )
+  }
+
+  const removeTagFromMessage = (messageId, tagId) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === messageId
+          ? { ...m, tags: m.tags.filter((t) => t !== tagId) }
+          : m
+      )
+    )
   }
 
   return (
@@ -129,7 +170,14 @@ export default function App() {
           />
         )}
         {tab === 'history' && (
-          <HistoryPage messages={messages} soundEnabled={soundEnabled} />
+          <HistoryPage
+            messages={messages}
+            soundEnabled={soundEnabled}
+            tags={tags}
+            onCreateTag={createTag}
+            onAddTagToMessage={addTagToMessage}
+            onRemoveTagFromMessage={removeTagFromMessage}
+          />
         )}
       </main>
 

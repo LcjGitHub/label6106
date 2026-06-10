@@ -1,6 +1,24 @@
 const STATIONS = ['BJ', 'SH', 'GZ', 'CD', 'WH', 'NJ', 'XA', 'CQ', 'TJ', 'HK']
 const PRIORITIES = ['ROUTINE', 'PRIORITY', 'IMMEDIATE', 'FLASH']
 
+export const DEFAULT_TAGS = [
+  { id: 'tag-weather', name: '气象', color: '#4a90d9' },
+  { id: 'tag-equipment', name: '设备', color: '#e07030' },
+  { id: 'tag-cargo', name: '货物', color: '#8a9a6a' },
+  { id: 'tag-dispatch', name: '调度', color: '#c4a035' },
+  { id: 'tag-confidential', name: '内部', color: '#e03030' },
+  { id: 'tag-test', name: '测试', color: '#9b59b6' },
+]
+
+const MESSAGE_TAG_IDS = [
+  ['tag-weather'],
+  ['tag-dispatch'],
+  ['tag-cargo'],
+  ['tag-equipment'],
+  ['tag-test'],
+  ['tag-confidential', 'tag-dispatch'],
+]
+
 function pad(n) {
   return String(n).padStart(2, '0')
 }
@@ -38,6 +56,7 @@ export function generateMockMessages(count = 30) {
     const body = template(i + 1)
     const from = STATIONS[i % STATIONS.length]
     const to = STATIONS[(i + 3) % STATIONS.length]
+    const tagIds = MESSAGE_TAG_IDS[i % MESSAGE_TAG_IDS.length]
     return {
       id: `msg-${String(i + 1).padStart(3, '0')}`,
       index: i + 1,
@@ -47,6 +66,7 @@ export function generateMockMessages(count = 30) {
       timestamp: randomTime(i),
       preview: body.replace(/\r\n/g, ' ').replace(/\r/g, ' ').replace(/\n/g, ' ').slice(0, 48).trim() + '…',
       body,
+      tags: tagIds,
     }
   })
 }
