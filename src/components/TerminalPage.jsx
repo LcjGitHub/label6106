@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import TeletypeOutput from './TeletypeOutput'
 import { useTypewriter } from '../hooks/useTypewriter'
 import { useTypewriterSound } from '../hooks/useTypewriterSound'
+import NotificationManager from '../utils/NotificationManager'
 import './TerminalPage.css'
 
 const WELCOME =
@@ -120,15 +121,31 @@ export default function TerminalPage({
   }, [input, isPrinting, onSendToHistory])
 
   const simulateReceive = useCallback(
-    (text) => {
+    (text, { from = 'UNKNOWN', to = 'LOCAL', priority = 'ROUTINE' } = {}) => {
       if (isPrinting) return
       const payload = text.endsWith('\r\n') ? text : text + '\r\n'
       const header = `\r\n<<< RX ${new Date().toLocaleTimeString('zh-CN', { hour12: false })}\r\n`
+      const preview = text.replace(/\r\n/g, ' ').replace(/\r/g, ' ').replace(/\n/g, ' ').slice(0, 48).trim() + (text.length > 48 ? '…' : '')
+
+      onSendToHistory?.({
+        id: `rx-${Date.now()}`,
+        from,
+        to,
+        priority,
+        timestamp: new Date().toLocaleString('zh-CN'),
+        preview,
+        body: payload,
+      })
+
+      NotificationManager.showIncomingMessage(from, preview, () => {
+        window.focus()
+      })
+
       flushedRef.current = ''
       setIncoming(header + payload)
       setIsPrinting(true)
     },
-    [isPrinting],
+    [isPrinting, onSendToHistory],
   )
 
   const handleKeyDown = (e) => {
@@ -275,6 +292,7 @@ export default function TerminalPage({
             onClick={() =>
               simulateReceive(
                 'TEST MSG\r\n逐字打印演示: THE QUICK BROWN FOX\r\n回车覆盖: ALFA\rBETA\r\n换行: LINE-1\r\nLINE-2\r\n',
+                { from: 'TEST-STATION', to: 'LOCAL', priority: 'ROUTINE' },
               )
             }
             disabled={isPrinting}
