@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import TeletypeOutput from './TeletypeOutput'
 import { useTypewriter } from '../hooks/useTypewriter'
 import { useTypewriterSound } from '../hooks/useTypewriterSound'
@@ -11,10 +11,77 @@ const PRIORITY_CLASS = {
   FLASH: 'priority--flash',
 }
 
+const PRIORITY_OPTIONS = [
+  { value: 'all', label: '全部优先级' },
+  { value: 'ROUTINE', label: 'ROUTINE (常规)' },
+  { value: 'PRIORITY', label: 'PRIORITY (优先)' },
+  { value: 'IMMEDIATE', label: 'IMMEDIATE (急件)' },
+  { value: 'FLASH', label: 'FLASH (特急)' },
+]
+
+const TIME_RANGE_OPTIONS = [
+  { value: 'all', label: '全部时间' },
+  { value: 'today', label: '今天' },
+  { value: '7days', label: '近7天' },
+  { value: '30days', label: '近30天' },
+]
+
+function extractSubject(body) {
+  const match = body.match(/SUBJ[::]\s*(.+?)(?:\r\n|\r|\n|$)/i)
+  return match ? match[1].trim() : ''
+}
+
+function isInTimeRange(timestamp, range) {
+  if (range === 'all') return true
+  const msgDate = new Date(timestamp.replace(' ', 'T'))
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const diffTime = today.getTime() - msgDate.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  switch (range) {
+    case 'today':
+      return diffDays === 0
+    case '7days':
+      return diffDays >= 0 && diffDays <= 7
+    case '30days':
+      return diffDays >= 0 && diffDays <= 30
+    default:
+      return true
+  }
+}
+
 export default function HistoryPage({ messages, soundEnabled }) {
   const [selected, setSelected] = useState(null)
   const [replaying, setReplaying] = useState(false)
+  const [searchKeyword, setSearchKeyword] = useState('')
+  const [priorityFilter, setPriorityFilter] = useState('all')
+  const [timeRangeFilter, setTimeRangeFilter] = useState('all')
   const { playClick, playBell } = useTypewriterSound(soundEnabled)
+
+  const filteredMessages = useMemo(() => {
+    const keyword = searchKeyword.trim().toLowerCase()
+    return messages.filter((msg) => {
+      if (priorityFilter !== 'all' && msg.priority !== priorityFilter) {
+        return false
+      }
+      if (!isInTimeRange(msg.timestamp, timeRangeFilter)) {
+        return false
+      }
+      if (keyword) {
+        const subject = extractSubject(msg.body).toLowerCase()
+        const from = msg.from.toLowerCase()
+        const to = msg.to.toLowerCase()
+        const body = msg.body.toLowerCase()
+        return (
+          subject.includes(keyword) ||
+          from.includes(keyword) ||
+          to.includes(keyword) ||
+          body.includes(keyword)
+        )
+      }
+      return true
+    })
+  }, [messages, searchKeyword, priorityFilter, timeRangeFilter])
 
   const body = selected?.body ?? ''
 
@@ -47,10 +114,44 @@ export default function HistoryPage({ messages, soundEnabled }) {
       <aside className="history-page__list-panel">
         <header className="history-page__list-header">
           <h2>报文历史</h2>
-          <span className="history-page__count">{messages.length} 条</span>
+          <span className="history-page__count">{filteredMessages.length} / {messages.length} 条</span>
         </header>
+        <div className="history-page__filters">
+          <input
+            type="text"
+            className="history-page__search-input"
+            placeholder="搜索主题/收发方/内容..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+          />
+          <div className="history-page__filter-row">
+            <select
+              className="history-page__filter-select"
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+            >
+              {PRIORITY_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+            <select
+              className="history-page__filter-select"
+              value={timeRangeFilter}
+              onChange={(e) => setTimeRangeFilter(e.target.value)}
+            >
+              {TIME_RANGE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         <ul className="history-page__list" role="list">
-          {messages.map((msg) => (
+          {filteredMessages.length > 0 ? (
+            filteredMessages.map((msg) => (
             <li key={msg.id}>
               <button
                 type="button"
@@ -70,7 +171,13 @@ export default function HistoryPage({ messages, soundEnabled }) {
                 <span className="history-page__item-preview">{msg.preview}</span>
               </button>
             </li>
-          ))}
+          ))
+          ) : (
+            <li className="history-page__no-results">
+              <p>未找到匹配的报文</p>
+              <p className="history-page__no-results-hint">请尝试调整搜索条件或筛选器</p>
+            </li>
+          )}
         </ul>
       </aside>
 
