@@ -1,0 +1,55 @@
+:root {
+  --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+  --chassis: #2a2418;
+  --bezel-dark: #1a1610;
+  --bezel-light: #4a4030;
+  --panel-bg: #1e1a12;
+  --screen-bg: #0a0c06;
+  --phosphor: #ffb000;
+  --phosphor-dim: #8a6200;
+  --phosphor-glow: rgba(255, 176, 0, 0.35);
+  --label-muted: #6a5c40;
+  --btn-bg: #3a3224;
+  --btn-fg: #e8d8a8;
+  --btn-border: #5a4e36;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-mono);
+  background: #12100c;
+  color: var(--btn-fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  color: var(--btn-fg);
+  background: var(--btn-bg);
+  border: 2px outset var(--btn-border);
+  transition: background 0.15s;
+}
+
+button:hover:not(:disabled) {
+  background: #4a4030;
+}
+
+button:active:not(:disabled) {
+  border-style: inset;
+}
+
+input[type='checkbox'] {
+  accent-color: var(--phosphor);
+}
