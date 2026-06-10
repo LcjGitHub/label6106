@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import TeletypeOutput from './TeletypeOutput'
 import { useTypewriter } from '../hooks/useTypewriter'
 import { useTypewriterSound } from '../hooks/useTypewriterSound'
@@ -82,6 +82,14 @@ export default function HistoryPage({ messages, soundEnabled }) {
       return true
     })
   }, [messages, searchKeyword, priorityFilter, timeRangeFilter])
+
+  useEffect(() => {
+    if (selected && !filteredMessages.some((m) => m.id === selected.id)) {
+      setSelected(null)
+      setReplaying(false)
+      reset()
+    }
+  }, [filteredMessages, selected, reset])
 
   const body = selected?.body ?? ''
 

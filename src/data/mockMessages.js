@@ -6,10 +6,15 @@ function pad(n) {
 }
 
 function randomTime(index) {
-  const day = pad((index % 28) + 1)
+  const now = new Date()
+  const daysAgo = (index - 1) % 35
+  const msgDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - daysAgo)
+  const year = msgDate.getFullYear()
+  const month = pad(msgDate.getMonth() + 1)
+  const day = pad(msgDate.getDate())
   const hour = pad((index * 3 + 7) % 24)
   const min = pad((index * 7 + 13) % 60)
-  return `2024-06-${day} ${hour}:${min}`
+  return `${year}-${month}-${day} ${hour}:${min}`
 }
 
 const TEMPLATES = [
