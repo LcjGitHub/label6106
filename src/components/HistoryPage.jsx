@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import TeletypeOutput from './TeletypeOutput'
 import TagFilter from './TagFilter'
 import { useTypewriter } from '../hooks/useTypewriter'
 import { useTypewriterSound } from '../hooks/useTypewriterSound'
+import { useFilteredMessages } from '../hooks/useFilteredMessages'
 import { exportAsText, exportAsJson } from '../utils/exportUtils'
 import './HistoryPage.css'
 
@@ -27,30 +28,6 @@ const TIME_RANGE_OPTIONS = [
   { value: '7days', label: '近7天' },
   { value: '30days', label: '近30天' },
 ]
-
-function extractSubject(body) {
-  const match = body.match(/SUBJ[::]\s*(.+?)(?:\r\n|\r|\n|$)/i)
-  return match ? match[1].trim() : ''
-}
-
-function isInTimeRange(timestamp, range) {
-  if (range === 'all') return true
-  const msgDate = new Date(timestamp.replace(' ', 'T'))
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const diffTime = today.getTime() - msgDate.getTime()
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-  switch (range) {
-    case 'today':
-      return diffDays === 0
-    case '7days':
-      return diffDays >= 0 && diffDays <= 7
-    case '30days':
-      return diffDays >= 0 && diffDays <= 30
-    default:
-      return true
-  }
-}
 
 const RECALL_WINDOW_MS = 2 * 60 * 1000
 const RECALL_STORAGE_KEY = 'telex_recalled_messages'
@@ -209,9 +186,9 @@ export default function HistoryPage({
     })
   }
 
-  const isStarred = (messageId) => {
+  const isStarred = useCallback((messageId) => {
     return !!starred[messageId]
-  }
+  }, [starred])
 
   const handleToggleSelect = (messageId, e) => {
     if (e) {
@@ -228,40 +205,15 @@ export default function HistoryPage({
     })
   }
 
-  const filteredMessages = useMemo(() => {
-    const keyword = searchKeyword.trim().toLowerCase()
-    return messages.filter((msg) => {
-      if (starFilter && !isStarred(msg.id)) {
-        return false
-      }
-      if (priorityFilter !== 'all' && msg.priority !== priorityFilter) {
-        return false
-      }
-      if (!isInTimeRange(msg.timestamp, timeRangeFilter)) {
-        return false
-      }
-      if (selectedTagIds.length > 0) {
-        const msgTagIds = msg.tags || []
-        const hasAllTags = selectedTagIds.every((tagId) => msgTagIds.includes(tagId))
-        if (!hasAllTags) {
-          return false
-        }
-      }
-      if (keyword) {
-        const subject = extractSubject(msg.body).toLowerCase()
-        const from = msg.from.toLowerCase()
-        const to = msg.to.toLowerCase()
-        const body = msg.body.toLowerCase()
-        return (
-          subject.includes(keyword) ||
-          from.includes(keyword) ||
-          to.includes(keyword) ||
-          body.includes(keyword)
-        )
-      }
-      return true
-    })
-  }, [messages, searchKeyword, priorityFilter, timeRangeFilter, selectedTagIds, starFilter, starred])
+  const { filteredMessages, getPerformanceLogs } = useFilteredMessages({
+    messages,
+    searchKeyword,
+    priorityFilter,
+    timeRangeFilter,
+    selectedTagIds,
+    starFilter,
+    isStarred,
+  })
 
   const handleSelectAll = () => {
     const allIds = filteredMessages.map((m) => m.id)
